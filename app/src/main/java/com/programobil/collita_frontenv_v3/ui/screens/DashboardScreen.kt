@@ -16,12 +16,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.programobil.collita_frontenv_v3.data.api.RetrofitClient
+import com.programobil.collita_frontenv_v3.network.RetrofitClient
 import com.programobil.collita_frontenv_v3.data.api.UserResponse
 import com.programobil.collita_frontenv_v3.data.api.CanaDto
 import com.programobil.collita_frontenv_v3.ui.viewmodel.UserViewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.CanaViewModel
-import com.programobil.collita_frontenv_v3.ui.screens.HistorialCanaScreen
 import com.programobil.collita_frontenv_v3.ui.viewmodel.HistorialCanaViewModel
 import java.time.Duration
 import java.time.LocalDateTime
@@ -495,14 +494,4 @@ fun HomeContent(
             }
         }
     }
-}
-
-data class CanaDto(
-    val idUsuario: String,
-    val fecha: String,
-    val horaInicio: String,
-    val horaFin: String,
-    val cantidadAranazos: Double,
-    val descripcion: String,
-    val imagenUrl: String
-) 
+} 

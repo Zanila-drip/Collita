@@ -14,4 +14,7 @@ interface CanaService {
 
     @GET("cana/usuario/{idUsuario}/todas")
     suspend fun getAllCanaByUsuario(@Path("idUsuario") idUsuario: String): List<CanaDto>
+
+    @GET("cana/fecha/{fecha}")
+    suspend fun getCanaByFecha(@Path("fecha") fecha: String): List<CanaDto>
 } 

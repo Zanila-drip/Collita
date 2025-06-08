@@ -37,9 +37,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.unit.LocalDate
-import com.programobil.collita_frontenv_v3.data.api.RetrofitClient
 import com.programobil.collita_frontenv_v3.data.api.CanaDto
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import android.app.DatePickerDialog
+import androidx.compose.ui.platform.LocalContext
+import java.util.Calendar
+import com.programobil.collita_frontenv_v3.data.api.UsuarioDto
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import com.programobil.collita_frontenv_v3.network.RetrofitClient
 
 @Composable
 fun AdminHomePageScreen(navController: NavController) {
@@ -367,15 +374,17 @@ fun AdminDatosScreen(navController: NavController? = null) {
 @Composable
 fun AdminReportesScreen() {
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    val viewModel: AdminViewModel = viewModel()
+    var showDatePicker by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val formattedDate = selectedDate.format(DateTimeFormatter.ISO_DATE)
     var canas by remember { mutableStateOf<List<CanaDto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(selectedDate) {
+    LaunchedEffect(formattedDate) {
         isLoading = true
         try {
-            canas = RetrofitClient.canaService.getCanaByFecha(selectedDate.toString())
+            canas = RetrofitClient.canaService.getCanaByFecha(formattedDate)
             error = null
         } catch (e: Exception) {
             error = "Error al cargar los datos: ${e.message}"
@@ -399,19 +408,31 @@ fun AdminReportesScreen() {
 
         // Selector de fecha
         OutlinedTextField(
-            value = selectedDate.toString(),
+            value = formattedDate,
             onValueChange = { },
             label = { Text("Fecha") },
             readOnly = true,
             trailingIcon = {
-                IconButton(onClick = {
-                    // Aquí podríamos mostrar un DatePicker
-                }) {
+                IconButton(onClick = { showDatePicker = true }) {
                     Icon(Icons.Default.DateRange, contentDescription = "Seleccionar fecha")
                 }
             },
             modifier = Modifier.fillMaxWidth()
         )
+
+        if (showDatePicker) {
+            val calendar = Calendar.getInstance()
+            DatePickerDialog(
+                context,
+                { _, year, month, dayOfMonth ->
+                    selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+                    showDatePicker = false
+                },
+                selectedDate.year,
+                selectedDate.monthValue - 1,
+                selectedDate.dayOfMonth
+            ).show()
+        }
 
         if (isLoading) {
             CircularProgressIndicator(
@@ -434,7 +455,7 @@ fun AdminReportesScreen() {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Resumen del día ${selectedDate}",
+                        text = "Resumen del día $selectedDate",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -465,28 +486,7 @@ fun AdminReportesScreen() {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(canas) { cana ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "Usuario: ${cana.idUsuario}",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = "Cantidad: ${cana.cantidadCanaUsuario}",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = "Horario: ${cana.horaInicioUsuario} - ${cana.horaFinalUsuario}",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
+                        ExpandableCanaCard(cana)
                     }
                 }
             } else {
@@ -495,6 +495,53 @@ fun AdminReportesScreen() {
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun ExpandableCanaCard(cana: CanaDto) {
+    var expanded by remember { mutableStateOf(false) }
+    var usuario by remember { mutableStateOf<UsuarioDto?>(null) }
+    val scope = rememberCoroutineScope()
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                expanded = !expanded
+                if (expanded && usuario == null) {
+                    scope.launch {
+                        try {
+                            usuario = RetrofitClient.usuarioService.getUsuarioById(cana.idUsuario)
+                        } catch (_: Exception) {}
+                    }
+                }
+            },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row {
+                Text(
+                    text = usuario?.nombreUsuario ?: "Cargando...",
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = "Arañazos: ${cana.cantidadCanaUsuario}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (expanded) {
+                Divider(Modifier.padding(vertical = 4.dp))
+                Text("CURP: ${usuario?.curpUsuario ?: "Cargando..."}")
+                Text("ID: ${cana.idUsuario}")
+                Text("Hora inicio: ${cana.horaInicioUsuario}")
+                Text("Hora fin: ${cana.horaFinalUsuario}")
             }
         }
     }

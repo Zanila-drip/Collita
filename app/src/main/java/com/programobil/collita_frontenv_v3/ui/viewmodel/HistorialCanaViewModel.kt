@@ -3,7 +3,7 @@ package com.programobil.collita_frontenv_v3.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.programobil.collita_frontenv_v3.data.api.CanaDto
-import com.programobil.collita_frontenv_v3.data.api.RetrofitClient
+import com.programobil.collita_frontenv_v3.network.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
