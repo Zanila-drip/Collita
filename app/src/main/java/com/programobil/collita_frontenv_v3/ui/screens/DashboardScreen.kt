@@ -26,6 +26,9 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -493,5 +496,64 @@ fun HomeContent(
                 Text("Tiempo trabajado: 0 horas")
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DashboardScreenPreview() {
+    val navController = rememberNavController()
+    val viewModel = viewModel<UserViewModel>()
+    val canaViewModel = viewModel<CanaViewModel>()
+    
+    MaterialTheme {
+        DashboardScreen(
+            navController = navController,
+            viewModel = viewModel,
+            canaViewModel = canaViewModel
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeContentPreview() {
+    MaterialTheme {
+        HomeContent()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ConfiguracionContentPreview() {
+    val user = UserResponse(
+        nombreUsuario = "Juan",
+        apellidoPaternoUsuario = "Pérez",
+        apellidoMaternoUsuario = "García",
+        correo = "juan@example.com",
+        telefono = "1234567890",
+        curpUsuario = "PEGJ123456HDFABC01"
+    )
+    
+    MaterialTheme {
+        ConfiguracionContent(user)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ExpandableCanaCardPreview() {
+    val cana = CanaDto(
+        idUsuario = "123",
+        horaInicioUsuario = "08:00:00",
+        horaFinalUsuario = "12:00:00",
+        cantidadCanaUsuario = 150.0,
+        fecha = "2024-03-20",
+        fechaUsuario = "2024-03-20",
+        resumenCosecha = "Cosecha exitosa"
+    )
+    
+    MaterialTheme {
+        ExpandableCanaCard(cana = cana)
     }
 } 

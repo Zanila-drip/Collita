@@ -9,6 +9,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.programobil.collita_frontenv_v3.ui.viewmodel.RegisterViewModel
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,5 +129,14 @@ fun RegisterScreen(
                 Text("¿Ya tienes cuenta? Inicia sesión")
             }
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun RegisterScreenPreview() {
+    val navController = rememberNavController()
+    MaterialTheme {
+        RegisterScreen(navController = navController)
     }
 } 

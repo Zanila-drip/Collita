@@ -10,6 +10,8 @@ import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginViewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.UserViewModel
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 
 @Composable
 fun LoginScreen(
@@ -134,5 +136,14 @@ fun LoginScreen(
         ) {
             Text("¿No tienes cuenta? Regístrate")
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun LoginScreenPreview() {
+    val navController = rememberNavController()
+    MaterialTheme {
+        LoginScreen(navController = navController)
     }
 } 
