@@ -41,7 +41,7 @@ fun HistorialCanaScreen(viewModel: HistorialCanaViewModel, idUsuario: String) {
             }
             is HistorialCanaState.Empty -> {
                 Text(
-                    text = "No hay cañas registradas.",
+                    text = "No hay arañazos registrados.",
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
