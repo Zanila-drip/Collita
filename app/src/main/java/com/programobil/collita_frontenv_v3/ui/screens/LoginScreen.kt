@@ -1,86 +1,122 @@
 package com.programobil.collita_frontenv_v3.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginViewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.UserViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: LoginViewModel,
-    userViewModel: UserViewModel
+    viewModel: LoginViewModel = viewModel(),
+    userViewModel: UserViewModel = viewModel()
 ) {
-    var email by remember { mutableStateOf("ana.lopez@example.com") }
-    var curp by remember { mutableStateOf("LOMA123456MDFABC02") }
     val state by viewModel.state.collectAsState()
+    var isAdminMode by remember { mutableStateOf(false) }
 
+    // Credenciales precargadas
+    val adminEmail = "Ramiro07@email.com"
+    val adminCurp = "CURPADMIN123"
+    val userEmail = "ana.lopez@example.com"
+    val userCurp = "LOMA123456MDFABC02"
+
+    var email by remember { mutableStateOf(userEmail) }
+    var curp by remember { mutableStateOf(userCurp) }
+
+    // Alternar entre usuario y admin
+    fun switchUser() {
+        if (isAdminMode) {
+            email = userEmail
+            curp = userCurp
+        } else {
+            email = adminEmail
+            curp = adminCurp
+        }
+        isAdminMode = !isAdminMode
+    }
+
+    // Redirección tras login exitoso
     LaunchedEffect(state) {
-        if (state is LoginViewModel.LoginState.Success) {
-            val response = (state as LoginViewModel.LoginState.Success).response
-            userViewModel.setCurrentUserId(response.id)
-            navController.navigate("dashboard") {
-                popUpTo("login") { inclusive = true }
-                launchSingleTop = true
+        when (state) {
+            is LoginViewModel.LoginState.Success -> {
+                val response = (state as LoginViewModel.LoginState.Success).response
+                val isAdmin = response.correo == adminEmail && response.curpUsuario == adminCurp
+                userViewModel.setCurrentUserId(response.id)
+                userViewModel.loadUser()
+                if (isAdmin) {
+                    navController.navigate("admin_nav") {
+                        popUpTo("login") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                } else {
+                    navController.navigate("dashboard") {
+                        popUpTo("login") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+                // Resetea el estado para evitar bucles
+                viewModel.setLoginState(LoginViewModel.LoginState.Initial)
             }
+            else -> {}
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(32.dp),
         verticalArrangement = Arrangement.Center
     ) {
+        // Título grande y centrado
         Text(
-            text = "Iniciar Sesión",
+            text = "Login",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 32.dp)
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = 32.dp)
         )
+        Button(
+            onClick = { switchUser() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (isAdminMode) "Usar cuenta de Ana" else "Usar cuenta de Admin")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = { if (!isAdminMode) email = it },
             label = { Text("Correo electrónico") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+            enabled = !isAdminMode,
+            modifier = Modifier.fillMaxWidth()
         )
 
         OutlinedTextField(
             value = curp,
-            onValueChange = { curp = it },
+            onValueChange = { if (!isAdminMode) curp = it },
             label = { Text("CURP") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+            enabled = !isAdminMode,
+            modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = { viewModel.login(email, curp) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
+            modifier = Modifier.fillMaxWidth(),
             enabled = state !is LoginViewModel.LoginState.Loading
         ) {
             if (state is LoginViewModel.LoginState.Loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
             } else {
-                Text("Iniciar Sesión")
+                Text("Iniciar sesión")
             }
         }
 

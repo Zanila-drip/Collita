@@ -11,6 +11,9 @@ interface ApiService {
 
     @POST("usuarios")
     suspend fun register(@Body user: UserResponse): UserResponse
+
+    @GET("usuarios")
+    suspend fun getAllUsuarios(): List<UserResponse>
 }
 
 data class LoginRequest(

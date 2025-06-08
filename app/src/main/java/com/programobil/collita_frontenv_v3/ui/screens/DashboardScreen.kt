@@ -85,8 +85,8 @@ fun DashboardScreen(
                     onClick = { selectedTab = 1 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = "Configuración") },
-                    label = { Text("Configuración") },
+                    icon = { Icon(Icons.Filled.Person, contentDescription = "Datos") },
+                    label = { Text("Datos") },
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 }
                 )

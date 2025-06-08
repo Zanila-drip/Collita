@@ -18,6 +18,7 @@ import com.programobil.collita_frontenv_v3.ui.theme.CollitaFrontenvv3Theme
 import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginViewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.RegisterViewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.UserViewModel
+import com.programobil.collita_frontenv_v3.ui.screens.AdminNavHost
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +68,20 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 viewModel = userViewModel
                             )
+                        }
+                        composable(
+                            route = "admin_home",
+                            enterTransition = { fadeIn() },
+                            exitTransition = { fadeOut() }
+                        ) {
+                            AdminHomePageScreen(navController = navController)
+                        }
+                        composable(
+                            route = "admin_nav",
+                            enterTransition = { fadeIn() },
+                            exitTransition = { fadeOut() }
+                        ) {
+                            AdminNavHost()
                         }
                     }
                 }
