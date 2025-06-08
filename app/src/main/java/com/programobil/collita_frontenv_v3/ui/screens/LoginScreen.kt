@@ -6,23 +6,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.programobil.collita_frontenv_v3.ui.theme.CollitaFrontenvv3Theme
-import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginViewModel
+import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginViewModelFactory
+import com.programobil.collita_frontenv_v3.data.api.RetrofitClient
+import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginState
 
 @Composable
 fun LoginScreen(
-    viewModel: LoginViewModel,
-    modifier: Modifier = Modifier
+    onLoginSuccess: (String) -> Unit,
+    onRegisterClick: () -> Unit,
+    viewModel: LoginViewModel = viewModel(factory = LoginViewModelFactory(RetrofitClient.apiService))
 ) {
-    var correo by remember { mutableStateOf("") }
-    var curp by remember { mutableStateOf("") }
+    var correo by remember { mutableStateOf("maria.rodriguez@email.com") }
+    var curp by remember { mutableStateOf("ROSM920315MDFRRN03") }
+
     val loginState by viewModel.loginState.collectAsState()
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -30,129 +33,67 @@ fun LoginScreen(
     ) {
         Text(
             text = "Iniciar Sesión",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 32.dp)
+            style = MaterialTheme.typography.headlineMedium
         )
+
+        Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
             value = correo,
             onValueChange = { correo = it },
             label = { Text("Correo Electrónico") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            enabled = loginState !is LoginState.Loading && loginState !is LoginState.Validating
+            modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = curp,
             onValueChange = { curp = it },
             label = { Text("CURP") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            enabled = loginState !is LoginState.Loading && loginState !is LoginState.Validating
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Button(
-            onClick = { viewModel.login(correo, curp) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            enabled = loginState !is LoginState.Loading && loginState !is LoginState.Validating
-        ) {
-            when (loginState) {
-                is LoginState.Loading -> {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                is LoginState.Validating -> {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text("Validando usuario...")
-                    }
-                }
-                else -> {
-                    Text("Iniciar Sesión")
-                }
-            }
-        }
+        Spacer(modifier = Modifier.height(32.dp))
 
         when (loginState) {
+            is LoginState.Loading -> {
+                CircularProgressIndicator()
+            }
             is LoginState.Error -> {
                 Text(
                     text = (loginState as LoginState.Error).message,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 16.dp)
+                    color = MaterialTheme.colorScheme.error
                 )
             }
-            is LoginState.Validating -> {
-                Text(
-                    text = "Usuario validado ✓",
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+            is LoginState.Success -> {
+                LaunchedEffect(Unit) {
+                    onLoginSuccess((loginState as LoginState.Success).userName)
+                }
             }
             else -> {}
         }
-    }
-}
 
-// Clase de prueba para previsualizaciones
-private class PreviewLoginViewModel : LoginViewModel(null) {
-    fun setPreviewState(state: LoginState) {
-        _loginState.value = state
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun LoginScreenPreview() {
-    CollitaFrontenvv3Theme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+        Button(
+            onClick = {
+                viewModel.login(correo, curp)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            enabled = loginState !is LoginState.Loading
         ) {
-            val previewViewModel = PreviewLoginViewModel()
-            LoginScreen(viewModel = previewViewModel)
+            Text("Iniciar Sesión")
         }
-    }
-}
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun LoginScreenLoadingPreview() {
-    CollitaFrontenvv3Theme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            val previewViewModel = PreviewLoginViewModel()
-            previewViewModel.setPreviewState(LoginState.Loading)
-            LoginScreen(viewModel = previewViewModel)
-        }
-    }
-}
+        Spacer(modifier = Modifier.height(16.dp))
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun LoginScreenValidatingPreview() {
-    CollitaFrontenvv3Theme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+        TextButton(
+            onClick = onRegisterClick,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            val previewViewModel = PreviewLoginViewModel()
-            previewViewModel.setPreviewState(LoginState.Validating)
-            LoginScreen(viewModel = previewViewModel)
+            Text("¿No tienes cuenta? Regístrate aquí")
         }
     }
 } 

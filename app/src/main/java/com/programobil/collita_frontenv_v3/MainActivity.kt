@@ -9,27 +9,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.programobil.collita_frontenv_v3.ui.screens.HomePageScreen
-import com.programobil.collita_frontenv_v3.ui.screens.LoginScreen
+import androidx.navigation.navArgument
+import com.programobil.collita_frontenv_v3.data.api.RetrofitClient
+import com.programobil.collita_frontenv_v3.ui.screens.*
 import com.programobil.collita_frontenv_v3.ui.theme.CollitaFrontenvv3Theme
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import com.programobil.collita_frontenv_v3.data.api.ApiService
 import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginViewModel
-import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginState
+import com.programobil.collita_frontenv_v3.ui.viewmodel.LoginViewModelFactory
+import com.programobil.collita_frontenv_v3.ui.viewmodel.RegisterViewModel
+import com.programobil.collita_frontenv_v3.ui.viewmodel.RegisterViewModelFactory
 
 class MainActivity : ComponentActivity() {
-    private val retrofit = Retrofit.Builder()
-        .baseUrl("http://10.0.2.2:8080/") // URL para el emulador Android
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-
-    private val apiService = retrofit.create(ApiService::class.java)
-    private val loginViewModel = LoginViewModel(apiService)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -39,28 +33,50 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val navController = rememberNavController()
-                    val loginState by loginViewModel.loginState.collectAsState()
-
-                    // Observar el estado de login para navegar
-                    LaunchedEffect(loginState) {
-                        if (loginState is LoginState.Success) {
-                            navController.navigate("home") {
-                                popUpTo("login") { inclusive = true }
-                            }
-                        }
-                    }
-
-                    NavHost(navController = navController, startDestination = "login") {
-                        composable("login") {
-                            LoginScreen(viewModel = loginViewModel)
-                        }
-                        composable("home") {
-                            HomePageScreen()
-                        }
-                    }
+                    AppNavigation()
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
+    val loginViewModel: LoginViewModel = viewModel(factory = LoginViewModelFactory(RetrofitClient.apiService))
+    val registerViewModel: RegisterViewModel = viewModel(factory = RegisterViewModelFactory(RetrofitClient.apiService))
+
+    NavHost(navController = navController, startDestination = "login") {
+        composable("login") {
+            LoginScreen(
+                onLoginSuccess = { userName ->
+                    navController.navigate("dashboard/$userName") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
+                onRegisterClick = {
+                    navController.navigate("register")
+                },
+                viewModel = loginViewModel
+            )
+        }
+        composable("register") {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    navController.popBackStack()
+                },
+                viewModel = registerViewModel
+            )
+        }
+        composable(
+            route = "dashboard/{userName}",
+            arguments = listOf(navArgument("userName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userName = backStackEntry.arguments?.getString("userName") ?: ""
+            DashboardScreen(
+                userName = userName,
+                navController = navController
+            )
         }
     }
 }
