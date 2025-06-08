@@ -3,228 +3,186 @@ package com.programobil.collita_frontenv_v3.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import com.programobil.collita_frontenv_v3.data.api.UserResponse
+import com.programobil.collita_frontenv_v3.ui.viewmodel.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    userName: String,
-    navController: NavController
+    navController: NavController,
+    viewModel: UserViewModel = viewModel()
 ) {
-    var selectedItem by remember { mutableStateOf(0) }
-    val items = listOf("Principal", "Cosecha", "Historial", "Datos")
-    
-    // Estado de ejemplo (esto vendría del ViewModel)
-    var hasActiveSession by remember { mutableStateOf(false) }
-    var hasActionsToday by remember { mutableStateOf(false) }
-    var lastAction by remember { mutableStateOf("08:00 - 12:00, 2 toneladas") }
-    var totalCanaToday by remember { mutableStateOf(2.5) }
-    var numberOfActions by remember { mutableStateOf(1) }
-    var timeWorked by remember { mutableStateOf("4 horas") }
+    val state by viewModel.state.collectAsState()
+    var selectedTab by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadUser()
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Person,
-                            contentDescription = "Usuario"
-                        )
-                        Text("¡Hola $userName!")
+                    when (state) {
+                        is UserViewModel.UserState.Success -> {
+                            val user = (state as UserViewModel.UserState.Success).user
+                            val primerNombre = user.nombreUsuario?.split(" ")?.first() ?: "Usuario"
+                            Text("👋 ¡Hola, $primerNombre!")
+                        }
+                        else -> Text("Dashboard")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                actions = {
+                    IconButton(onClick = {
+                        viewModel.logout()
+                        navController.navigate("login") {
+                            popUpTo("dashboard") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar sesión")
+                    }
+                }
             )
         },
         bottomBar = {
             NavigationBar {
-                items.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        icon = {
-                            Icon(
-                                imageVector = when (index) {
-                                    0 -> Icons.Filled.Home
-                                    1 -> Icons.Filled.List
-                                    2 -> Icons.Filled.DateRange
-                                    else -> Icons.Filled.Person
-                                },
-                                contentDescription = item
-                            )
-                        },
-                        label = { Text(item) },
-                        selected = selectedItem == index,
-                        onClick = { selectedItem = index }
-                    )
-                }
+                NavigationBarItem(
+                    icon = { Icon(Icons.Filled.Home, contentDescription = "Inicio") },
+                    label = { Text("Inicio") },
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Filled.List, contentDescription = "Historial") },
+                    label = { Text("Historial") },
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Filled.Settings, contentDescription = "Configuración") },
+                    label = { Text("Configuración") },
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 }
+                )
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Fecha y hora actual
-            Text(
-                text = LocalDateTime.now().format(
-                    DateTimeFormatter.ofPattern("EEEE d 'de' MMMM, HH:mm")
-                ),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            when (selectedItem) {
-                0 -> PrincipalContent(
-                    hasActiveSession = hasActiveSession,
-                    hasActionsToday = hasActionsToday,
-                    lastAction = lastAction,
-                    totalCanaToday = totalCanaToday,
-                    numberOfActions = numberOfActions,
-                    timeWorked = timeWorked,
-                    onStartNewAction = { /* TODO: Implementar */ }
-                )
-                1 -> CosechaContent()
-                2 -> HistorialContent()
-                3 -> DatosContent()
-            }
-        }
-    }
-}
-
-@Composable
-private fun PrincipalContent(
-    hasActiveSession: Boolean,
-    hasActionsToday: Boolean,
-    lastAction: String,
-    totalCanaToday: Double,
-    numberOfActions: Int,
-    timeWorked: String,
-    onStartNewAction: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Estado actual
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = if (hasActiveSession) 
-                    MaterialTheme.colorScheme.primaryContainer 
-                else 
-                    MaterialTheme.colorScheme.errorContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Estado Actual",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = if (hasActiveSession) "Sesión activa" else "Sin sesión activa",
-                    color = if (hasActiveSession) 
-                        MaterialTheme.colorScheme.onPrimaryContainer 
-                    else 
-                        MaterialTheme.colorScheme.onErrorContainer
-                )
-                if (hasActionsToday) {
+        Box(modifier = Modifier.padding(paddingValues)) {
+            when (state) {
+                is UserViewModel.UserState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                is UserViewModel.UserState.Success -> {
+                    val user = (state as UserViewModel.UserState.Success).user
+                    when (selectedTab) {
+                        0 -> HomeContent()
+                        1 -> HistorialContent()
+                        2 -> ConfiguracionContent(user)
+                    }
+                }
+                is UserViewModel.UserState.Error -> {
                     Text(
-                        text = "Última acción: $lastAction",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "Error: ${(state as UserViewModel.UserState.Error).message}",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                UserViewModel.UserState.Initial -> {
+                    Text(
+                        text = "Iniciando...",
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                UserViewModel.UserState.LoggedOut -> {
+                    Text(
+                        text = "Sesión cerrada",
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
         }
+    }
+}
 
-        // Botón de nueva acción
-        Button(
-            onClick = onStartNewAction,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = null
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Iniciar Nueva Acción")
-        }
-
-        // Resumen del día
+@Composable
+private fun DatosContent(user: UserResponse) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Resumen del Día",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    text = "${user.nombreUsuario}",
+                    style = MaterialTheme.typography.titleLarge
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Total de caña:")
-                    Text("$totalCanaToday toneladas")
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Acciones registradas:")
-                    Text("$numberOfActions")
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Tiempo trabajado:")
-                    Text(timeWorked)
-                }
+                Text(
+                    text = "${user.apellidoPaternoUsuario} ${user.apellidoMaternoUsuario}",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = user.correo ?: "",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = user.telefono ?: "",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = user.curpUsuario ?: "",
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CosechaContent() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Contenido de Cosecha",
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = value,
             style = MaterialTheme.typography.bodyLarge
         )
     }
@@ -232,26 +190,135 @@ private fun CosechaContent() {
 
 @Composable
 private fun HistorialContent() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "Historial de Actividades",
-            style = MaterialTheme.typography.bodyLarge
-        )
+        Text("Historial de actividades")
     }
 }
 
 @Composable
-private fun DatosContent() {
+private fun ConfiguracionContent(user: UserResponse) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Datos del Usuario",
-            style = MaterialTheme.typography.bodyLarge
-        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "${user.nombreUsuario}",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Text(
+                    text = "${user.apellidoPaternoUsuario} ${user.apellidoMaternoUsuario}",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = user.correo ?: "",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = user.telefono ?: "",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = user.curpUsuario ?: "",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Estado actual
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Estado actual",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Text(
+                    text = "¿Tienes una sesión activa hoy?",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "¿Ya registraste alguna acción?",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Button(
+                    onClick = { /* TODO */ },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Iniciar nueva acción")
+                }
+                Text(
+                    text = "Última acción registrada:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                // TODO: Mostrar detalles de última acción
+            }
+        }
+
+        // Resumen del día
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Resumen del día",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Text(
+                    text = "Total de caña trabajada hoy: 0 kg",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Número de acciones registradas: 0",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Tiempo trabajado: 0 horas",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
     }
 } 

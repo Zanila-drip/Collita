@@ -2,64 +2,56 @@ package com.programobil.collita_frontenv_v3.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.programobil.collita_frontenv_v3.data.api.ApiService
-import com.programobil.collita_frontenv_v3.data.api.RegisterRequest
+import com.programobil.collita_frontenv_v3.data.api.RetrofitClient
+import com.programobil.collita_frontenv_v3.data.api.UserResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import java.io.IOException
 
-sealed class RegisterState {
-    object Initial : RegisterState()
-    object Loading : RegisterState()
-    data class Success(val message: String) : RegisterState()
-    data class Error(val message: String) : RegisterState()
-}
-
-class RegisterViewModel(private val apiService: ApiService?) : ViewModel() {
-    private val _registerState = MutableStateFlow<RegisterState>(RegisterState.Initial)
-    val registerState: StateFlow<RegisterState> = _registerState
+class RegisterViewModel : ViewModel() {
+    private val _state = MutableStateFlow<RegisterState>(RegisterState.Initial)
+    val state: StateFlow<RegisterState> = _state.asStateFlow()
 
     fun register(
         nombreUsuario: String,
         apellidoPaterno: String,
         apellidoMaterno: String,
-        curp: String,
         correo: String,
-        telefono: String
+        telefono: String,
+        curpUsuario: String
     ) {
-        if (apiService == null) {
-            _registerState.value = RegisterState.Error("Error de configuración: ApiService no disponible")
-            return
-        }
-
-        _registerState.value = RegisterState.Loading
-
         viewModelScope.launch {
+            _state.value = RegisterState.Loading
             try {
-                val request = RegisterRequest(
+                if (nombreUsuario.isBlank() || apellidoPaterno.isBlank() || 
+                    apellidoMaterno.isBlank() || correo.isBlank() || 
+                    telefono.isBlank() || curpUsuario.isBlank()) {
+                    _state.value = RegisterState.Error("Todos los campos son obligatorios")
+                    return@launch
+                }
+
+                val user = UserResponse(
                     nombreUsuario = nombreUsuario,
                     apellidoPaternoUsuario = apellidoPaterno,
                     apellidoMaternoUsuario = apellidoMaterno,
-                    curpUsuario = curp,
                     correo = correo,
-                    telefono = telefono
+                    telefono = telefono,
+                    curpUsuario = curpUsuario
                 )
 
-                val response = apiService.register(request)
-                _registerState.value = RegisterState.Success("Usuario registrado exitosamente")
-            } catch (e: HttpException) {
-                when (e.code()) {
-                    409 -> _registerState.value = RegisterState.Error("Ya existe un usuario con este correo o CURP")
-                    400 -> _registerState.value = RegisterState.Error("Datos inválidos. Por favor verifica la información")
-                    else -> _registerState.value = RegisterState.Error("Error del servidor: ${e.message()}")
-                }
-            } catch (e: IOException) {
-                _registerState.value = RegisterState.Error("Error de conexión. Verifica tu conexión a internet")
+                val response = RetrofitClient.apiService.register(user)
+                _state.value = RegisterState.Success(response)
             } catch (e: Exception) {
-                _registerState.value = RegisterState.Error("Error al registrar usuario: ${e.message}")
+                _state.value = RegisterState.Error("Error al registrar: ${e.message}")
             }
         }
+    }
+
+    sealed class RegisterState {
+        object Initial : RegisterState()
+        object Loading : RegisterState()
+        data class Success(val user: UserResponse) : RegisterState()
+        data class Error(val message: String) : RegisterState()
     }
 } 
