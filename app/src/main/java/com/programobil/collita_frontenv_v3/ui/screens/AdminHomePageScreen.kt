@@ -47,9 +47,19 @@ import com.programobil.collita_frontenv_v3.data.api.UsuarioDto
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import com.programobil.collita_frontenv_v3.network.RetrofitClient
+import androidx.compose.ui.tooling.preview.Preview
+import com.programobil.collita_frontenv_v3.ui.components.UsuarioCardHistorialStyle
+import com.programobil.collita_frontenv_v3.ui.theme.AdminTheme
 
 @Composable
 fun AdminHomePageScreen(navController: NavController) {
+    AdminTheme {
+        AdminHomePageScreenContent(navController)
+    }
+}
+
+@Composable
+private fun AdminHomePageScreenContent(navController: NavController) {
     val viewModel: AdminViewModel = viewModel()
     val usuarios = viewModel.usuarios
     val error = viewModel.error
@@ -188,132 +198,6 @@ private fun LoadingIndicator() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun UsuarioCardHistorialStyle(usuario: UserResponse) {
-    var expanded by remember { mutableStateOf(false) }
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clickable { expanded = !expanded },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Nombre y botón editar
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Person,
-                    contentDescription = "Usuario",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "${usuario.nombreUsuario} ${usuario.apellidoPaternoUsuario} ${usuario.apellidoMaternoUsuario}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = { /* TODO: Editar */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            Divider(color = MaterialTheme.colorScheme.outlineVariant)
-            // CURP
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Info,
-                    contentDescription = "CURP",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "CURP: ${usuario.curpUsuario ?: "-"}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            // Teléfono
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Phone,
-                    contentDescription = "Teléfono",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "Teléfono: ${usuario.telefono ?: "-"}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            // Correo
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Email,
-                    contentDescription = "Correo",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "Correo: ${usuario.correo ?: "-"}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            // Acciones rápidas (solo si está expandido)
-            if (expanded) {
-                Divider(color = MaterialTheme.colorScheme.outlineVariant)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { /* TODO: Tickets */ },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.List,
-                            contentDescription = "Tickets",
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Tickets")
-                    }
-                    OutlinedButton(
-                        onClick = { /* TODO: Pagar */ },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Pagar",
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Pagar")
-                    }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 fun AdminInicioScreen() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -354,20 +238,6 @@ fun AdminDatosScreen(navController: NavController? = null) {
             Text("No se encontraron datos del administrador.", color = MaterialTheme.colorScheme.error)
         }
         Spacer(modifier = Modifier.weight(1f))
-        Text(
-            text = "Cerrar sesión",
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyLarge,
-            textDecoration = TextDecoration.Underline,
-            modifier = Modifier
-                .align(Alignment.End)
-                .clickable {
-                    navController?.navigate("login") {
-                        popUpTo(0) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-        )
     }
 }
 
@@ -380,12 +250,15 @@ fun AdminReportesScreen() {
     var canas by remember { mutableStateOf<List<CanaDto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(formattedDate) {
         isLoading = true
         try {
-            canas = RetrofitClient.canaService.getCanaByFecha(formattedDate)
-            error = null
+            scope.launch {
+                canas = RetrofitClient.canaService.getCanaByFecha(formattedDate)
+                error = null
+            }
         } catch (e: Exception) {
             error = "Error al cargar los datos: ${e.message}"
         } finally {
@@ -665,5 +538,47 @@ fun AdminNavHost() {
             composable("datos") { AdminDatosScreen() }
             composable("reportes") { AdminReportesScreen() }
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun AdminHomePageScreenPreview() {
+    val navController = rememberNavController()
+    AdminTheme {
+        AdminHomePageScreenContent(navController = navController)
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun AdminDatosScreenPreview() {
+    val navController = rememberNavController()
+    AdminTheme {
+        AdminDatosScreen(navController = navController)
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun AdminReportesScreenPreview() {
+    AdminTheme {
+        AdminReportesScreen()
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun AdminUsuariosScreenPreview() {
+    AdminTheme {
+        AdminUsuariosScreen()
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun AdminNavHostPreview() {
+    AdminTheme {
+        AdminNavHost()
     }
 } 

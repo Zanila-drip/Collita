@@ -29,6 +29,8 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 import java.text.Normalizer
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
 
 @Composable
 fun HistorialCanaScreen(viewModel: HistorialCanaViewModel, idUsuario: String) {
@@ -266,5 +268,14 @@ fun CanaCard(cana: CanaDto) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun HistorialCanaScreenPreview() {
+    val fakeViewModel = HistorialCanaViewModel()
+    MaterialTheme {
+        HistorialCanaScreen(viewModel = fakeViewModel, idUsuario = "usuario_demo")
     }
 } 

@@ -26,6 +26,15 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.foundation.clickable
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -265,6 +274,20 @@ private fun ConfiguracionContent(user: UserResponse) {
     }
 }
 
+fun createPartFromString(value: String): RequestBody =
+    value.toRequestBody("text/plain".toMediaTypeOrNull())
+
+fun uriToFile(context: android.content.Context, uri: Uri): File {
+    val inputStream = context.contentResolver.openInputStream(uri)
+    val file = File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
+    inputStream?.use { input ->
+        file.outputStream().use { output ->
+            input.copyTo(output)
+        }
+    }
+    return file
+}
+
 @Composable
 fun HomeContent(
     userViewModel: UserViewModel = viewModel()
@@ -278,6 +301,8 @@ fun HomeContent(
     var tiempoTranscurrido by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var canaId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -375,6 +400,7 @@ fun HomeContent(
                             value = descripcion,
                             onValueChange = { descripcion = it },
                             label = { Text("Descripción") },
+                            placeholder = { Text("Ejemplo: PIG 1") },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -382,13 +408,50 @@ fun HomeContent(
                 confirmButton = {
                     Button(
                         onClick = {
-                            tiempoInicio = LocalDateTime.now()
-                            showCosechaDialog = false
+                            scope.launch {
+                                isLoading = true
+                                try {
+                                    val now = LocalDateTime.now()
+                                    val file = selectedImageUri?.let { uriToFile(context, it) }
+                                    val filePart = file?.let {
+                                        val requestFile = it.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                                        MultipartBody.Part.createFormData("file", it.name, requestFile)
+                                    }
+                                    val response = RetrofitClient.canaService.createCanaConImagen(
+                                        file = filePart!!,
+                                        idUsuario = createPartFromString(userViewModel.getCurrentUserId() ?: ""),
+                                        horaInicioUsuario = createPartFromString(now.format(DateTimeFormatter.ofPattern("HH:mm:ss"))),
+                                        horaFinalUsuario = null,
+                                        cantidadCanaUsuario = createPartFromString("0"),
+                                        fecha = createPartFromString(now.format(DateTimeFormatter.ISO_DATE)),
+                                        fechaUsuario = createPartFromString(now.format(DateTimeFormatter.ISO_DATE)),
+                                        resumenCosecha = createPartFromString(descripcion)
+                                    )
+                                    if (response.isSuccessful && response.body() != null) {
+                                        val cana = response.body()!!
+                                        canaId = cana.id
+                                        tiempoInicio = now
+                                        showCosechaDialog = false
+                                    } else {
+                                        showError = true
+                                        errorMessage = "Error al iniciar la cosecha: ${response.message()}"
+                                    }
+                                } catch (e: Exception) {
+                                    showError = true
+                                    errorMessage = "Error al iniciar la cosecha: ${e.message}"
+                                } finally {
+                                    isLoading = false
+                                }
+                            }
                         },
-                        enabled = selectedImageUri != null && descripcion.isNotBlank(),
+                        enabled = selectedImageUri != null && descripcion.isNotBlank() && !isLoading,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Iniciar")
+                        if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        } else {
+                            Text("Iniciar")
+                        }
                     }
                 },
                 dismissButton = {
@@ -424,35 +487,43 @@ fun HomeContent(
                     Button(
                         onClick = {
                             scope.launch {
+                                isLoading = true
                                 try {
                                     val now = LocalDateTime.now()
-                                    val canaDto = CanaDto(
+                                    val canaUpdate = CanaDto(
+                                        id = canaId,
                                         idUsuario = userViewModel.getCurrentUserId() ?: "",
                                         horaInicioUsuario = tiempoInicio?.format(DateTimeFormatter.ofPattern("HH:mm:ss")) ?: now.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
                                         horaFinalUsuario = now.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-                                        cantidadCanaUsuario = cantidadAranazos.toDouble(),
+                                        cantidadCanaUsuario = cantidadAranazos.toDoubleOrNull() ?: 0.0,
                                         fecha = now.format(DateTimeFormatter.ISO_DATE),
                                         fechaUsuario = now.format(DateTimeFormatter.ISO_DATE),
                                         resumenCosecha = descripcion
                                     )
-                                    
-                                    RetrofitClient.canaService.createCana(canaDto)
-                                    
+                                    // PUT para actualizar la caña
+                                    RetrofitClient.canaService.updateCana(canaId!!, canaUpdate)
                                     showResumenDialog = false
                                     tiempoInicio = null
                                     selectedImageUri = null
                                     descripcion = ""
                                     cantidadAranazos = ""
+                                    canaId = null
                                 } catch (e: Exception) {
                                     showError = true
                                     errorMessage = "Error al guardar la cosecha: ${e.message}"
+                                } finally {
+                                    isLoading = false
                                 }
                             }
                         },
-                        enabled = cantidadAranazos.isNotBlank(),
+                        enabled = cantidadAranazos.isNotBlank() && canaId != null && !isLoading,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Terminar")
+                        if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        } else {
+                            Text("Terminar")
+                        }
                     }
                 },
                 dismissButton = {
@@ -493,5 +564,64 @@ fun HomeContent(
                 Text("Tiempo trabajado: 0 horas")
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DashboardScreenPreview() {
+    val navController = rememberNavController()
+    val viewModel = viewModel<UserViewModel>()
+    val canaViewModel = viewModel<CanaViewModel>()
+    
+    MaterialTheme {
+        DashboardScreen(
+            navController = navController,
+            viewModel = viewModel,
+            canaViewModel = canaViewModel
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeContentPreview() {
+    MaterialTheme {
+        HomeContent()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ConfiguracionContentPreview() {
+    val user = UserResponse(
+        nombreUsuario = "Juan",
+        apellidoPaternoUsuario = "Pérez",
+        apellidoMaternoUsuario = "García",
+        correo = "juan@example.com",
+        telefono = "1234567890",
+        curpUsuario = "PEGJ123456HDFABC01"
+    )
+    
+    MaterialTheme {
+        ConfiguracionContent(user)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ExpandableCanaCardPreview() {
+    val cana = CanaDto(
+        idUsuario = "123",
+        horaInicioUsuario = "08:00:00",
+        horaFinalUsuario = "12:00:00",
+        cantidadCanaUsuario = 150.0,
+        fecha = "2024-03-20",
+        fechaUsuario = "2024-03-20",
+        resumenCosecha = "Cosecha exitosa"
+    )
+    
+    MaterialTheme {
+        ExpandableCanaCard(cana = cana)
     }
 } 

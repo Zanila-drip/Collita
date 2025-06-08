@@ -7,7 +7,8 @@ import com.programobil.collita_frontenv_v3.data.api.UsuarioService
 import com.programobil.collita_frontenv_v3.data.api.ApiService
 
 object RetrofitClient {
-    private const val BASE_URL = "http://165.232.146.36:8080/api/v1/" // IP del backend en la red local
+//    private const val BASE_URL = "http://165.232.146.36:8080/api/v1/" // IP del backend en la red local
+    private const val BASE_URL = "http://192.168.1.71:8080/api/v1/" // IP del backend en la red local
 
     private val retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
