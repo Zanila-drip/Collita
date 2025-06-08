@@ -21,6 +21,8 @@ import com.programobil.collita_frontenv_v3.data.api.UserResponse
 import com.programobil.collita_frontenv_v3.data.api.CanaDto
 import com.programobil.collita_frontenv_v3.ui.viewmodel.UserViewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.CanaViewModel
+import com.programobil.collita_frontenv_v3.ui.screens.HistorialCanaScreen
+import com.programobil.collita_frontenv_v3.ui.viewmodel.HistorialCanaViewModel
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -35,6 +37,8 @@ fun DashboardScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
+    val historialCanaViewModel = remember { HistorialCanaViewModel() }
+    val idUsuario = viewModel.getCurrentUserId() ?: ""
 
     LaunchedEffect(Unit) {
         viewModel.loadUser()
@@ -100,7 +104,7 @@ fun DashboardScreen(
                     val user = (state as UserViewModel.UserState.Success).user
                     when (selectedTab) {
                         0 -> HomeContent(userViewModel = viewModel)
-                        1 -> HistorialContent()
+                        1 -> HistorialCanaScreen(viewModel = historialCanaViewModel, idUsuario = idUsuario)
                         2 -> ConfiguracionContent(user)
                     }
                 }

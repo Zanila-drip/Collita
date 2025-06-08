@@ -21,8 +21,8 @@ fun LoginScreen(
     viewModel: LoginViewModel,
     userViewModel: UserViewModel
 ) {
-    var email by remember { mutableStateOf("leonardo.garcia@email.com") }
-    var curp by remember { mutableStateOf("GARL900101HDFRRN01") }
+    var email by remember { mutableStateOf("ana.lopez@example.com") }
+    var curp by remember { mutableStateOf("LOMA123456MDFABC02") }
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(state) {
