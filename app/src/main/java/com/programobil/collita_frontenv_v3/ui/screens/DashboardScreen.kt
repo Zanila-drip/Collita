@@ -1,5 +1,8 @@
 package com.programobil.collita_frontenv_v3.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -8,18 +11,27 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.programobil.collita_frontenv_v3.data.api.RetrofitClient
 import com.programobil.collita_frontenv_v3.data.api.UserResponse
+import com.programobil.collita_frontenv_v3.data.api.CanaDto
 import com.programobil.collita_frontenv_v3.ui.viewmodel.UserViewModel
+import com.programobil.collita_frontenv_v3.ui.viewmodel.CanaViewModel
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     navController: NavController,
-    viewModel: UserViewModel = viewModel()
+    viewModel: UserViewModel = viewModel(),
+    canaViewModel: CanaViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
@@ -87,7 +99,7 @@ fun DashboardScreen(
                 is UserViewModel.UserState.Success -> {
                     val user = (state as UserViewModel.UserState.Success).user
                     when (selectedTab) {
-                        0 -> HomeContent()
+                        0 -> HomeContent(userViewModel = viewModel)
                         1 -> HistorialContent()
                         2 -> ConfiguracionContent(user)
                     }
@@ -251,14 +263,48 @@ private fun ConfiguracionContent(user: UserResponse) {
 }
 
 @Composable
-fun HomeContent() {
+fun HomeContent(
+    userViewModel: UserViewModel = viewModel()
+) {
+    var showCosechaDialog by remember { mutableStateOf(false) }
+    var showResumenDialog by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var descripcion by remember { mutableStateOf("") }
+    var cantidadAranazos by remember { mutableStateOf("") }
+    var tiempoInicio by remember { mutableStateOf<LocalDateTime?>(null) }
+    var tiempoTranscurrido by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
+
+    // Actualizar tiempo transcurrido cada segundo
+    LaunchedEffect(tiempoInicio) {
+        while (tiempoInicio != null) {
+            val ahora = LocalDateTime.now()
+            val duracion = Duration.between(tiempoInicio, ahora)
+            tiempoTranscurrido = String.format(
+                "%02d:%02d:%02d",
+                duracion.toHours(),
+                duracion.toMinutesPart(),
+                duracion.toSecondsPart()
+            )
+            kotlinx.coroutines.delay(1000)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Estado actual
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -268,32 +314,165 @@ fun HomeContent() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Estado actual",
+                    text = "Estado Actual",
                     style = MaterialTheme.typography.titleLarge
                 )
-                Text(
-                    text = "¿Tienes una sesión activa hoy?",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = "¿Ya registraste alguna acción?",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Button(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Iniciar nueva acción")
-                }
-                Text(
-                    text = "Última acción registrada:",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                // TODO: Mostrar detalles de última acción
+                Text("¿Tienes una sesión activa?")
+                Text("¿Has registrado alguna acción hoy?")
             }
         }
 
-        // Resumen del día
+        if (tiempoInicio == null) {
+            Button(
+                onClick = { showCosechaDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Iniciar Cosecha")
+            }
+        } else {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Tiempo transcurrido: $tiempoTranscurrido",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Button(
+                    onClick = { showResumenDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Detener Cosecha")
+                }
+            }
+        }
+
+        if (showCosechaDialog) {
+            AlertDialog(
+                onDismissRequest = { showCosechaDialog = false },
+                title = { Text("Nueva Cosecha") },
+                text = {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Button(
+                            onClick = { imagePicker.launch("image/*") },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (selectedImageUri == null) "Seleccionar Imagen" else "Cambiar Imagen")
+                        }
+
+                        if (selectedImageUri != null) {
+                            Text("Imagen seleccionada")
+                        }
+
+                        OutlinedTextField(
+                            value = descripcion,
+                            onValueChange = { descripcion = it },
+                            label = { Text("Descripción") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            tiempoInicio = LocalDateTime.now()
+                            showCosechaDialog = false
+                        },
+                        enabled = selectedImageUri != null && descripcion.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Iniciar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCosechaDialog = false }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        if (showResumenDialog) {
+            AlertDialog(
+                onDismissRequest = { showResumenDialog = false },
+                title = { Text("Resumen de Cosecha") },
+                text = {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text("Tiempo total: $tiempoTranscurrido")
+                        OutlinedTextField(
+                            value = cantidadAranazos,
+                            onValueChange = { 
+                                if (it.isEmpty() || it.toIntOrNull() != null) {
+                                    cantidadAranazos = it
+                                }
+                            },
+                            label = { Text("Cantidad de Arañazos") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    val now = LocalDateTime.now()
+                                    val canaDto = CanaDto(
+                                        idUsuario = userViewModel.getCurrentUserId() ?: "",
+                                        horaInicioUsuario = tiempoInicio?.format(DateTimeFormatter.ofPattern("HH:mm:ss")) ?: now.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
+                                        horaFinalUsuario = now.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
+                                        cantidadCanaUsuario = cantidadAranazos.toDouble(),
+                                        fecha = now.format(DateTimeFormatter.ISO_DATE),
+                                        fechaUsuario = now.format(DateTimeFormatter.ISO_DATE),
+                                        resumenCosecha = descripcion
+                                    )
+                                    
+                                    RetrofitClient.canaService.createCana(canaDto)
+                                    
+                                    showResumenDialog = false
+                                    tiempoInicio = null
+                                    selectedImageUri = null
+                                    descripcion = ""
+                                    cantidadAranazos = ""
+                                } catch (e: Exception) {
+                                    showError = true
+                                    errorMessage = "Error al guardar la cosecha: ${e.message}"
+                                }
+                            }
+                        },
+                        enabled = cantidadAranazos.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Terminar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showResumenDialog = false }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        if (showError) {
+            AlertDialog(
+                onDismissRequest = { showError = false },
+                title = { Text("Error") },
+                text = { Text(errorMessage) },
+                confirmButton = {
+                    TextButton(onClick = { showError = false }) {
+                        Text("Aceptar")
+                    }
+                }
+            )
+        }
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -303,22 +482,23 @@ fun HomeContent() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Resumen del día",
+                    text = "Resumen del Día",
                     style = MaterialTheme.typography.titleLarge
                 )
-                Text(
-                    text = "Total de caña trabajada hoy: 0 kg",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = "Número de acciones registradas: 0",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = "Tiempo trabajado: 0 horas",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Text("Total de trabajo realizado: 0")
+                Text("Número de acciones registradas: 0")
+                Text("Tiempo trabajado: 0 horas")
             }
         }
     }
-} 
+}
+
+data class CanaDto(
+    val idUsuario: String,
+    val fecha: String,
+    val horaInicio: String,
+    val horaFin: String,
+    val cantidadAranazos: Double,
+    val descripcion: String,
+    val imagenUrl: String
+) 

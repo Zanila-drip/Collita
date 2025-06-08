@@ -34,4 +34,5 @@ object RetrofitClient {
         .build()
 
     val apiService: ApiService = retrofit.create(ApiService::class.java)
+    val canaService: CanaService = retrofit.create(CanaService::class.java)
 } 
