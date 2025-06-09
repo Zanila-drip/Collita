@@ -29,19 +29,15 @@ class PagosViewModel : ViewModel() {
                 val pagos = RetrofitClient.pagoService.getPagos()
                 println("TODOS LOS PAGOS RECIBIDOS: $pagos")
 
-                val mesActual = LocalDate.now().monthValue
-                val anioActual = LocalDate.now().year
-                val pagosPendientesMes = pagos.filter {
-                    it.estado == "pendiente" &&
-                    LocalDate.parse(it.periodoInicio).monthValue == mesActual &&
-                    LocalDate.parse(it.periodoInicio).year == anioActual
+                val pagosPendientes = pagos.filter {
+                    it.estado == "pendiente"
                 }
-                println("PAGOS PENDIENTES DEL MES: $pagosPendientesMes")
+                println("PAGOS PENDIENTES: $pagosPendientes")
 
-                if (pagosPendientesMes.isEmpty()) {
+                if (pagosPendientes.isEmpty()) {
                     _state.value = PagosState.Empty
                 } else {
-                    _state.value = PagosState.Success(pagosPendientesMes)
+                    _state.value = PagosState.Success(pagosPendientes)
                 }
             } catch (e: Exception) {
                 _state.value = PagosState.Error("Error al cargar pagos: "+e.localizedMessage)
