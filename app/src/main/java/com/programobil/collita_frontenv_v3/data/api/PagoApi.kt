@@ -1,3 +1,5 @@
+/* Aplicacion Collita v1 Participantes:  Godos García Jesús Emmanuel, Ortiz Sánchez Néstor Éibar, Peña Perez Axel, Axel David Ruiz Vargas, Ramiro Morales*/
+
 package com.programobil.collita_frontenv_v3.data.api
 
 import retrofit2.http.*

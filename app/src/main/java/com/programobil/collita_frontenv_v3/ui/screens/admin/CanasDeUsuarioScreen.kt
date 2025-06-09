@@ -1,3 +1,44 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * CanasDeUsuarioScreen - Pantalla de visualización de cañas por usuario
+ * 
+ * Flujo de la pantalla:
+ * 1. Al cargar, se obtienen las cañas del usuario seleccionado
+ * 2. Se muestran las cañas organizadas por:
+ *    - Fecha
+ *    - Estado
+ *    - Monto
+ * 
+ * Componentes principales:
+ * - Información del usuario:
+ *    * Nombre completo
+ *    * CURP
+ *    * Correo
+ * - Filtros:
+ *    * Por fecha
+ *    * Por estado
+ *    * Por monto
+ * - Lista de cañas con:
+ *    * Fecha y hora
+ *    * Cantidad
+ *    * Imagen
+ *    * Resumen
+ *    * Estado
+ *    * Monto
+ * 
+ * Interacciones:
+ * - Al hacer clic en una caña, se muestra el detalle completo
+ * - Al hacer clic en la imagen, se muestra en tamaño completo
+ * - Al usar los filtros, se actualiza la lista de cañas
+ * - Al hacer clic en exportar, se genera un reporte
+ */
+
 package com.programobil.collita_frontenv_v3.ui.screens.admin
 
 import androidx.compose.foundation.background

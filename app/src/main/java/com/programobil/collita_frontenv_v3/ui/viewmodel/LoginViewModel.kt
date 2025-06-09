@@ -1,3 +1,44 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * LoginViewModel - ViewModel para la autenticación de usuarios
+ * 
+ * Responsabilidades:
+ * 1. Gestión de autenticación:
+ *    - Validación de credenciales
+ *    - Manejo de sesión
+ *    - Redirección según rol
+ * 
+ * Estados manejados:
+ * - Autenticación:
+ *    * Estado de login
+ *    * Usuario actual
+ *    * Token de sesión
+ *    * Errores de autenticación
+ * - Formulario:
+ *    * Correo
+ *    * CURP
+ *    * Estado de validación
+ * 
+ * Funciones principales:
+ * - Validar credenciales
+ * - Iniciar sesión
+ * - Cerrar sesión
+ * - Verificar sesión activa
+ * - Redirigir según rol
+ * 
+ * Eventos:
+ * - Login exitoso
+ * - Error de autenticación
+ * - Sesión expirada
+ * - Cambio de estado
+ */
+
 package com.programobil.collita_frontenv_v3.ui.viewmodel
 
 import android.util.Log

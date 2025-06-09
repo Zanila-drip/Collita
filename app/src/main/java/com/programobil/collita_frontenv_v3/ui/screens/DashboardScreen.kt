@@ -1,3 +1,30 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * DashboardScreen - Pantalla principal del usuario
+ * 
+ * Flujo de la pantalla:
+ * 1. Al cargar, se obtienen los datos del usuario y sus pagos pendientes
+ * 2. Se muestra un resumen de la actividad del día
+ * 3. Se muestran los pagos pendientes en orden de fecha
+ * 4. Se muestra el historial de pagos realizados
+ * 
+ * Componentes principales:
+ * - ResumenDiario: Muestra estadísticas del día (cañas registradas, monto total)
+ * - PagosPendientes: Lista de pagos por realizar con fecha y monto
+ * - HistorialPagos: Lista de pagos realizados con fecha y estado
+ * 
+ * Interacciones:
+ * - Al hacer clic en un pago pendiente, se muestra el detalle
+ * - Al hacer clic en el botón de nueva caña, se navega a la pantalla de registro
+ * - Al hacer clic en el botón de historial, se navega a la pantalla de historial
+ */
+
 package com.programobil.collita_frontenv_v3.ui.screens
 
 import android.net.Uri
@@ -19,6 +46,7 @@ import androidx.navigation.NavController
 import com.programobil.collita_frontenv_v3.network.RetrofitClient
 import com.programobil.collita_frontenv_v3.data.api.UserResponse
 import com.programobil.collita_frontenv_v3.data.api.CanaDto
+import com.programobil.collita_frontenv_v3.data.api.PagoDto
 import com.programobil.collita_frontenv_v3.ui.viewmodel.UserViewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.CanaViewModel
 import com.programobil.collita_frontenv_v3.ui.viewmodel.HistorialCanaViewModel
@@ -305,6 +333,10 @@ fun HomeContent(
     var canaId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val idUsuario = userViewModel.getCurrentUserId() ?: ""
+    var pagos by remember { mutableStateOf<List<PagoDto>>(emptyList()) }
+    var canas by remember { mutableStateOf<Map<String, CanaDto>>(emptyMap()) }
+    var isPagosLoading by remember { mutableStateOf(false) }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -327,242 +359,81 @@ fun HomeContent(
         }
     }
 
+    // Cargar pagos y cañas asociadas al iniciar
+    LaunchedEffect(idUsuario) {
+        isPagosLoading = true
+        try {
+            val pagosUsuario = RetrofitClient.pagoService.getPagosByUsuario(idUsuario)
+            pagos = pagosUsuario
+            // Obtener ids únicos de cañas asociadas
+            val canaIds = pagosUsuario.flatMap { it.detalleCanaIds ?: emptyList() }.distinct()
+            val canasMap = mutableMapOf<String, CanaDto>()
+            for (canaId in canaIds) {
+                try {
+                    val cana = RetrofitClient.canaService.getCanaById(canaId)
+                    canasMap[canaId] = cana
+                } catch (_: Exception) {}
+            }
+            canas = canasMap
+        } catch (_: Exception) {
+            pagos = emptyList()
+            canas = emptyMap()
+        } finally {
+            isPagosLoading = false
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Estado Actual",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text("¿Tienes una sesión activa?")
-                Text("¿Has registrado alguna acción hoy?")
-            }
-        }
-
-        if (tiempoInicio == null) {
-            Button(
-                onClick = { showCosechaDialog = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Iniciar Cosecha")
-            }
+        // Sección de tickets/pagos
+        Text("Tus pagos", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        if (isPagosLoading) {
+            CircularProgressIndicator()
         } else {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Tiempo transcurrido: $tiempoTranscurrido",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Button(
-                    onClick = { showResumenDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Detener Cosecha")
+            val pagosPendientes = pagos.filter { it.estado == "pendiente" }
+            val pagosCobrados = pagos.filter { it.estado == "pagado" }
+            if (pagosPendientes.isEmpty() && pagosCobrados.isEmpty()) {
+                Text("No tienes pagos registrados aún.")
+            } else {
+                if (pagosPendientes.isNotEmpty()) {
+                    Text("Pendientes", fontWeight = FontWeight.SemiBold)
+                    pagosPendientes.forEach { pago ->
+                        PagoCardUsuario(pago, canas)
+                    }
+                }
+                if (pagosCobrados.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Historial de pagos", fontWeight = FontWeight.SemiBold)
+                    pagosCobrados.forEach { pago ->
+                        PagoCardUsuario(pago, canas)
+                    }
                 }
             }
         }
+    }
+}
 
-        if (showCosechaDialog) {
-            AlertDialog(
-                onDismissRequest = { showCosechaDialog = false },
-                title = { Text("Nueva Cosecha") },
-                text = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Button(
-                            onClick = { imagePicker.launch("image/*") },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(if (selectedImageUri == null) "Seleccionar Imagen" else "Cambiar Imagen")
-                        }
-
-                        if (selectedImageUri != null) {
-                            Text("Imagen seleccionada")
-                        }
-
-                        OutlinedTextField(
-                            value = descripcion,
-                            onValueChange = { descripcion = it },
-                            label = { Text("Descripción") },
-                            placeholder = { Text("Ejemplo: PIG 1") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                isLoading = true
-                                try {
-                                    val now = LocalDateTime.now()
-                                    val file = selectedImageUri?.let { uriToFile(context, it) }
-                                    val filePart = file?.let {
-                                        val requestFile = it.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                                        MultipartBody.Part.createFormData("file", it.name, requestFile)
-                                    }
-                                    val response = RetrofitClient.canaService.createCanaConImagen(
-                                        file = filePart!!,
-                                        idUsuario = createPartFromString(userViewModel.getCurrentUserId() ?: ""),
-                                        horaInicioUsuario = createPartFromString(now.format(DateTimeFormatter.ofPattern("HH:mm:ss"))),
-                                        horaFinalUsuario = null,
-                                        cantidadCanaUsuario = createPartFromString("0"),
-                                        fecha = createPartFromString(now.format(DateTimeFormatter.ISO_DATE)),
-                                        fechaUsuario = createPartFromString(now.format(DateTimeFormatter.ISO_DATE)),
-                                        resumenCosecha = createPartFromString(descripcion)
-                                    )
-                                    if (response.isSuccessful && response.body() != null) {
-                                        val cana = response.body()!!
-                                        canaId = cana.id
-                                        tiempoInicio = now
-                                        showCosechaDialog = false
-                                    } else {
-                                        showError = true
-                                        errorMessage = "Error al iniciar la cosecha: ${response.message()}"
-                                    }
-                                } catch (e: Exception) {
-                                    showError = true
-                                    errorMessage = "Error al iniciar la cosecha: ${e.message}"
-                                } finally {
-                                    isLoading = false
-                                }
-                            }
-                        },
-                        enabled = selectedImageUri != null && descripcion.isNotBlank() && !isLoading,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            Text("Iniciar")
-                        }
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showCosechaDialog = false }) {
-                        Text("Cancelar")
-                    }
-                }
-            )
-        }
-
-        if (showResumenDialog) {
-            AlertDialog(
-                onDismissRequest = { showResumenDialog = false },
-                title = { Text("Resumen de Cosecha") },
-                text = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text("Tiempo total: $tiempoTranscurrido")
-                        OutlinedTextField(
-                            value = cantidadAranazos,
-                            onValueChange = { 
-                                if (it.isEmpty() || it.toIntOrNull() != null) {
-                                    cantidadAranazos = it
-                                }
-                            },
-                            label = { Text("Cantidad de Arañazos") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                isLoading = true
-                                try {
-                                    val now = LocalDateTime.now()
-                                    val canaUpdate = CanaDto(
-                                        id = canaId,
-                                        idUsuario = userViewModel.getCurrentUserId() ?: "",
-                                        horaInicioUsuario = tiempoInicio?.format(DateTimeFormatter.ofPattern("HH:mm:ss")) ?: now.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-                                        horaFinalUsuario = now.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-                                        cantidadCanaUsuario = cantidadAranazos.toDoubleOrNull() ?: 0.0,
-                                        fecha = now.format(DateTimeFormatter.ISO_DATE),
-                                        fechaUsuario = now.format(DateTimeFormatter.ISO_DATE),
-                                        resumenCosecha = descripcion
-                                    )
-                                    // PUT para actualizar la caña
-                                    RetrofitClient.canaService.updateCana(canaId!!, canaUpdate)
-                                    showResumenDialog = false
-                                    tiempoInicio = null
-                                    selectedImageUri = null
-                                    descripcion = ""
-                                    cantidadAranazos = ""
-                                    canaId = null
-                                } catch (e: Exception) {
-                                    showError = true
-                                    errorMessage = "Error al guardar la cosecha: ${e.message}"
-                                } finally {
-                                    isLoading = false
-                                }
-                            }
-                        },
-                        enabled = cantidadAranazos.isNotBlank() && canaId != null && !isLoading,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        } else {
-                            Text("Terminar")
-                        }
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showResumenDialog = false }) {
-                        Text("Cancelar")
-                    }
-                }
-            )
-        }
-
-        if (showError) {
-            AlertDialog(
-                onDismissRequest = { showError = false },
-                title = { Text("Error") },
-                text = { Text(errorMessage) },
-                confirmButton = {
-                    TextButton(onClick = { showError = false }) {
-                        Text("Aceptar")
-                    }
-                }
-            )
-        }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Resumen del Día",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text("Total de trabajo realizado: 0")
-                Text("Número de acciones registradas: 0")
-                Text("Tiempo trabajado: 0 horas")
-            }
+@Composable
+fun PagoCardUsuario(pago: PagoDto, canas: Map<String, CanaDto>) {
+    val descripcion = pago.detalleCanaIds?.firstOrNull()?.let { canas[it]?.resumenCosecha } ?: "Sin descripción"
+    val fechaCobro = pago.fechaPago ?: "-"
+    val monto = pago.monto
+    val estado = pago.estado
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text("Descripción: $descripcion", fontWeight = FontWeight.Bold)
+            Text("Monto: $${monto} MXN")
+            Text("Fecha de cobro: $fechaCobro")
+            Text("Estado: ${estado.capitalize()}")
         }
     }
 }

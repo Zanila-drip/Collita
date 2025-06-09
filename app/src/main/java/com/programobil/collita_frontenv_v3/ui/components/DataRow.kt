@@ -1,3 +1,40 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * DataRow - Componente de fila de datos
+ *
+ * Descripción:
+ * Componente reutilizable para mostrar un par etiqueta-valor en una fila.
+ *
+ * Características:
+ * - Muestra dos textos alineados horizontalmente
+ * - Etiqueta y valor con estilos diferenciados
+ * - Espaciado configurable
+ * - Adaptable a diferentes pantallas
+ *
+ * Parámetros:
+ * - label: String - Etiqueta o título de la fila
+ * - value: String - Valor asociado a la etiqueta
+ *
+ * Uso:
+ * Se utiliza en:
+ * - Detalles de usuario
+ * - Detalles de caña
+ * - Detalles de pago
+ * - Listados personalizados
+ *
+ * Ejemplo:
+ * DataRow(
+ *     label = "CURP",
+ *     value = "XXXX000000HDFRRR01"
+ * )
+ */
+
 package com.programobil.collita_frontenv_v3.ui.components
 
 import androidx.compose.foundation.layout.Row

@@ -1,3 +1,30 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * AdminHomePageScreen - Pantalla principal del administrador
+ * 
+ * Flujo de la pantalla:
+ * 1. Se muestran las secciones principales:
+ *    - Gestión de usuarios
+ *    - Gestión de pagos
+ *    - Reportes y estadísticas
+ * 
+ * Componentes principales:
+ * - Dashboard: Muestra KPIs principales en cards
+ * - MenúNavegación: Acceso rápido a las diferentes secciones
+ * - ListaAcciones: Acciones comunes del administrador
+ * 
+ * Interacciones:
+ * - Al hacer clic en una sección, se navega a la pantalla correspondiente
+ * - Al hacer clic en un KPI, se muestra el detalle
+ * - Al hacer clic en una acción, se ejecuta la operación correspondiente
+ */
+
 package com.programobil.collita_frontenv_v3.ui.screens
 
 import androidx.compose.foundation.background
@@ -104,12 +131,7 @@ private fun AdminHomePageScreenContent(navController: NavController) {
             modifier = Modifier.padding(paddingValues)
         ) {
             composable("dashboard") {
-                // Aquí puedes mostrar un dashboard, KPIs, accesos rápidos, etc.
-                Text(
-                    text = "Bienvenido al panel de administración",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(24.dp)
-                )
+                AdminDashboardResumen()
             }
             composable("pagos") { AdminPagosScreen() }
             composable("usuarios") {
@@ -820,6 +842,45 @@ fun PagosPendientesSection() {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AdminDashboardResumen() {
+    var totalPagosPendientes by remember { mutableStateOf(0) }
+    var totalUsuarios by remember { mutableStateOf(0) }
+    var totalCanasHoy by remember { mutableStateOf(0) }
+    var montoTotalPendiente by remember { mutableStateOf(0.0) }
+    val scope = rememberCoroutineScope()
+    val hoy = LocalDate.now().toString()
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            try {
+                val pagos = RetrofitClient.pagoService.getPagos()
+                totalPagosPendientes = pagos.count { it.estado == "pendiente" }
+                montoTotalPendiente = pagos.filter { it.estado == "pendiente" }.sumOf { it.monto }
+                val usuarios = RetrofitClient.usuarioService.getAll()
+                totalUsuarios = usuarios.size
+                val canas = RetrofitClient.canaService.getCanaByFecha(hoy)
+                totalCanasHoy = canas.size
+            } catch (_: Exception) {}
+        }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Resumen rápido", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("Pagos pendientes: $totalPagosPendientes")
+            Text("Monto total pendiente: $${montoTotalPendiente} MXN")
+            Text("Usuarios registrados: $totalUsuarios")
+            Text("Cañas registradas hoy: $totalCanasHoy")
         }
     }
 } 

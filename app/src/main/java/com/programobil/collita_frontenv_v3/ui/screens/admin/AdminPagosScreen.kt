@@ -1,3 +1,40 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * AdminPagosScreen - Pantalla de gestión de pagos para administradores
+ * 
+ * Flujo de la pantalla:
+ * 1. Al cargar, se obtienen todos los pagos pendientes
+ * 2. Se muestran los pagos organizados por:
+ *    - Fecha de cobro
+ *    - Estado (pendiente/cobrado)
+ *    - Usuario
+ * 
+ * Componentes principales:
+ * - Filtros:
+ *    * Por fecha
+ *    * Por estado
+ *    * Por usuario
+ * - Lista de pagos con:
+ *    * Nombre del usuario
+ *    * Monto total
+ *    * Fecha de cobro
+ *    * Estado
+ *    * Lista de cañas asociadas
+ * 
+ * Interacciones:
+ * - Al hacer clic en un pago, se muestra el detalle completo
+ * - Al hacer clic en editar, se puede modificar la fecha de cobro
+ * - Al hacer clic en marcar como cobrado, se actualiza el estado
+ * - Al hacer clic en ver cañas, se muestra la lista de cañas asociadas
+ * - Al usar los filtros, se actualiza la lista de pagos
+ */
+
 package com.programobil.collita_frontenv_v3.ui.screens.admin
 
 import androidx.compose.foundation.layout.*

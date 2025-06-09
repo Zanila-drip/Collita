@@ -1,3 +1,45 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * AdminViewModel - ViewModel para la gestión administrativa
+ * 
+ * Responsabilidades:
+ * 1. Gestión de datos administrativos:
+ *    - Estadísticas generales
+ *    - Lista de usuarios
+ *    - Lista de pagos
+ *    - Reportes
+ * 
+ * Estados manejados:
+ * - Estadísticas:
+ *    * Total usuarios
+ *    * Total pagos pendientes
+ *    * Monto total pendiente
+ *    * Cañas registradas hoy
+ * - Listas:
+ *    * Usuarios activos
+ *    * Pagos pendientes
+ *    * Reportes generados
+ * 
+ * Funciones principales:
+ * - Cargar estadísticas
+ * - Gestionar usuarios
+ * - Gestionar pagos
+ * - Generar reportes
+ * - Filtrar y buscar datos
+ * 
+ * Eventos:
+ * - Actualización de estadísticas
+ * - Cambios en usuarios
+ * - Cambios en pagos
+ * - Generación de reportes
+ */
+
 package com.programobil.collita_frontenv_v3.ui.viewmodel
 
 import androidx.lifecycle.ViewModel

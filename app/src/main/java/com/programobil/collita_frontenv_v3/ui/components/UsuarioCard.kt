@@ -1,3 +1,48 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * UsuarioCard - Componente de tarjeta de usuario (historial y gestión)
+ *
+ * Descripción:
+ * Componente reutilizable que muestra la información de un usuario en formato de tarjeta interactiva.
+ *
+ * Características:
+ * - Card con bordes redondeados y sombra
+ * - Información básica y de contacto del usuario
+ * - Acciones rápidas: ver cañas, editar, eliminar
+ * - Expansión para mostrar más acciones
+ * - Diálogo de confirmación para eliminar
+ *
+ * Información mostrada:
+ * - Nombre completo
+ * - CURP
+ * - Teléfono
+ * - Correo electrónico
+ *
+ * Parámetros:
+ * - usuario: UserResponse - Datos del usuario
+ * - onDelete: (UserResponse) -> Unit - Acción al eliminar
+ * - onShowCanas: (UserResponse) -> Unit - Acción al ver cañas
+ *
+ * Uso:
+ * Se utiliza en:
+ * - Listado de usuarios (admin)
+ * - Historial de usuarios
+ * - Gestión de usuarios
+ *
+ * Ejemplo:
+ * UsuarioCardHistorialStyle(
+ *     usuario = user,
+ *     onDelete = { /* eliminar usuario */ },
+ *     onShowCanas = { /* ver cañas */ }
+ * )
+ */
+
 package com.programobil.collita_frontenv_v3.ui.components
 
 import androidx.compose.foundation.clickable

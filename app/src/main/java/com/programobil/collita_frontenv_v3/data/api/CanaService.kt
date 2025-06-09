@@ -1,3 +1,51 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * CanaService - Servicio para operaciones de cañas
+ * 
+ * Descripción:
+ * Define los endpoints para la gestión de cañas.
+ * Maneja el registro, consulta y actualización de cañas,
+ * incluyendo la subida de imágenes.
+ * 
+ * Endpoints:
+ * - GET /cana
+ *    * Obtiene lista de todas las cañas
+ *    * Retorna: List<CanaDto>
+ * 
+ * - GET /cana/{id}
+ *    * Obtiene una caña específica
+ *    * Parámetros: id (String)
+ *    * Retorna: CanaDto
+ * 
+ * - POST /cana
+ *    * Registra una nueva caña
+ *    * Parámetros: CanaDto
+ *    * Retorna: CanaDto
+ * 
+ * - POST /cana/con-imagen
+ *    * Registra caña con imagen
+ *    * Parámetros: MultipartFile, CanaDto
+ *    * Retorna: CanaDto
+ * 
+ * Características:
+ * - Manejo de imágenes
+ * - Validación de datos
+ * - Cálculo automático de montos
+ * - Generación de pagos
+ * 
+ * Uso:
+ * Se utiliza principalmente en:
+ * - CanaViewModel
+ * - HistorialCanaViewModel
+ * - AdminViewModel
+ */
+
 package com.programobil.collita_frontenv_v3.data.api
 
 import retrofit2.http.*

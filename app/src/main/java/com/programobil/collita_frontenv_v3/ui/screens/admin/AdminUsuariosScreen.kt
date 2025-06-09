@@ -1,3 +1,46 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * AdminUsuariosScreen - Pantalla de gestión de usuarios
+ * 
+ * Flujo de la pantalla:
+ * 1. Al cargar, se obtiene la lista de usuarios registrados
+ * 2. Se muestran los usuarios con:
+ *    - Información básica
+ *    - Estado de cuenta
+ *    - Estadísticas de actividad
+ * 
+ * Componentes principales:
+ * - Barra de búsqueda:
+ *    * Por nombre
+ *    * Por CURP
+ *    * Por correo
+ * - Lista de usuarios con:
+ *    * Nombre completo
+ *    * CURP
+ *    * Correo
+ *    * Estado
+ *    * Fecha de registro
+ *    * Total de cañas
+ *    * Total de pagos
+ * - Botones de acción:
+ *    * Agregar usuario
+ *    * Editar usuario
+ *    * Desactivar/Activar
+ * 
+ * Interacciones:
+ * - Al hacer clic en un usuario, se muestra su perfil completo
+ * - Al hacer clic en editar, se abre el formulario de edición
+ * - Al hacer clic en ver cañas, se muestra el historial de cañas
+ * - Al hacer clic en ver pagos, se muestra el historial de pagos
+ * - Al usar la búsqueda, se filtra la lista de usuarios
+ */
+
 package com.programobil.collita_frontenv_v3.ui.screens.admin
 
 import androidx.compose.foundation.layout.*

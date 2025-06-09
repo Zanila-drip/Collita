@@ -1,3 +1,44 @@
+/* Aplicacion Collita v1
+ Participantes: Godos García Jesús Emmanuel 217o02950,
+                Ortiz Sánchez Néstor Éibar 217o03062,
+                Peña Perez Axel  217o00677,
+                Axel David Ruiz Vargas 217o03139,
+                Ramiro Morales 207o02190*/
+
+/**
+ * AdminReportesScreen - Pantalla de reportes y estadísticas
+ * 
+ * Flujo de la pantalla:
+ * 1. Al cargar, se obtienen las estadísticas generales:
+ *    - Total de cañas registradas
+ *    - Total de pagos realizados
+ *    - Monto total cobrado
+ *    - Usuarios activos
+ * 2. Se muestran los reportes por:
+ *    - Período (diario/semanal/mensual)
+ *    - Usuario
+ *    - Tipo de reporte
+ * 
+ * Componentes principales:
+ * - Selector de período:
+ *    * Calendario para selección de fechas
+ *    * Filtros predefinidos (hoy/semana/mes)
+ * - Gráficos:
+ *    * Cañas por día
+ *    * Pagos por período
+ *    * Distribución por usuario
+ * - Tablas de datos:
+ *    * Resumen de cañas
+ *    * Resumen de pagos
+ *    * Top usuarios
+ * 
+ * Interacciones:
+ * - Al seleccionar fechas, se actualizan los reportes
+ * - Al hacer clic en un gráfico, se muestra el detalle
+ * - Al hacer clic en exportar, se genera PDF/Excel
+ * - Al hacer clic en un usuario, se muestra su historial
+ */
+
 package com.programobil.collita_frontenv_v3.ui.screens.admin
 
 import androidx.compose.foundation.layout.*
