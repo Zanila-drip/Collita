@@ -8,5 +8,6 @@ data class CanaDto(
     val cantidadCanaUsuario: Double,
     val fecha: String,
     val fechaUsuario: String,
-    val resumenCosecha: String? = null
+    val resumenCosecha: String? = null,
+    val imagenPath: String? = null
 ) 

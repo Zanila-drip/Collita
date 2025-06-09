@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,7 +28,6 @@ import com.programobil.collita_frontenv_v3.data.api.UserResponse
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.clickable
@@ -56,6 +56,14 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import com.programobil.collita_frontenv_v3.ui.viewmodel.PagosViewModel
+import com.programobil.collita_frontenv_v3.ui.viewmodel.PagosState
+import com.programobil.collita_frontenv_v3.ui.screens.admin.PagosPendientesSection
+import com.programobil.collita_frontenv_v3.ui.screens.admin.AdminUsuariosScreen
+import com.programobil.collita_frontenv_v3.ui.screens.admin.AdminDatosScreen
+import com.programobil.collita_frontenv_v3.ui.screens.admin.AdminReportesScreen
+import com.programobil.collita_frontenv_v3.ui.screens.admin.CanasDeUsuarioScreen
+import com.programobil.collita_frontenv_v3.ui.screens.admin.AdminPagosScreen
 
 @Composable
 fun AdminHomePageScreen(navController: NavController) {
@@ -66,18 +74,14 @@ fun AdminHomePageScreen(navController: NavController) {
 
 @Composable
 private fun AdminHomePageScreenContent(navController: NavController) {
+    val navHostController = rememberNavController()
     val viewModel: AdminViewModel = viewModel()
     val usuarios = viewModel.usuarios
     val error = viewModel.error
     var searchQuery by remember { mutableStateOf("") }
     var usuarioSeleccionado by remember { mutableStateOf<UserResponse?>(null) }
 
-    // Obtener el nombre del admin logueado (primer usuario si es Ramiro, o puedes pasar el nombre por parámetro si lo prefieres)
-    val admin = usuarios.firstOrNull { it.correo?.contains("ramiro", ignoreCase = true) == true }
-    val adminName = admin?.let { "${it.nombreUsuario} ${it.apellidoPaternoUsuario}" } ?: "Administrador"
-    val isAdmin = admin != null
-
-    // Filtrado de usuarios
+    // Filtrado de usuarios (excluyendo admin Ramiro)
     val filteredUsuarios = remember(searchQuery, usuarios) {
         usuarios.filter { usuario ->
             val query = searchQuery.trim().lowercase()
@@ -93,76 +97,40 @@ private fun AdminHomePageScreenContent(navController: NavController) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+    Scaffold { paddingValues ->
+        NavHost(
+            navController = navHostController,
+            startDestination = "dashboard",
+            modifier = Modifier.padding(paddingValues)
         ) {
-            // Fila con saludo y botón de reportes
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, top = 24.dp, end = 16.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            composable("dashboard") {
+                // Aquí puedes mostrar un dashboard, KPIs, accesos rápidos, etc.
                 Text(
-                    text = "Bienvenido $adminName",
+                    text = "Bienvenido al panel de administración",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.padding(24.dp)
                 )
-                if (isAdmin) {
-                    IconButton(onClick = { navController.navigate("reportes") }) {
-                        Icon(
-                            imageVector = Icons.Filled.List,
-                            contentDescription = "Ir a reportes",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
+            }
+            composable("pagos") { AdminPagosScreen() }
+            composable("usuarios") {
+                if (usuarioSeleccionado == null) {
+                    AdminUsuariosScreen(
+                        usuarios = filteredUsuarios,
+                        error = error,
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { searchQuery = it },
+                        onDeleteUsuario = { user -> viewModel.eliminarUsuario(user.id ?: "") },
+                        onShowCanas = { usuario -> usuarioSeleccionado = usuario }
+                    )
+                } else {
+                    CanasDeUsuarioScreen(
+                        usuario = usuarioSeleccionado!!,
+                        onClose = { usuarioSeleccionado = null }
+                    )
                 }
             }
-            Divider(modifier = Modifier.padding(bottom = 8.dp))
-            // Buscador
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = { Text("Buscar usuario") },
-                placeholder = { Text("Nombre, correo o CURP") },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
-            )
-            Box(modifier = Modifier.weight(1f)) {
-                when {
-                    error != null -> {
-                        ErrorMessage(error)
-                    }
-                    usuarios.isEmpty() -> {
-                        LoadingIndicator()
-                    }
-                    else -> {
-                        if (usuarioSeleccionado != null) {
-                            CanasDeUsuarioScreen(usuarioSeleccionado!!, onClose = { usuarioSeleccionado = null })
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(filteredUsuarios) { usuario ->
-                                    UsuarioCardHistorialStyle(
-                                        usuario = usuario,
-                                        onDelete = { viewModel.eliminarUsuario(it.id ?: "") },
-                                        onShowCanas = { usuarioSeleccionado = it }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            composable("datos") { AdminDatosScreen(navController = navController) }
+            composable("reportes") { AdminReportesScreen() }
         }
     }
 }
@@ -643,11 +611,20 @@ fun AdminNavHost() {
                     }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Info, contentDescription = "Datos") },
-                    label = { Text("Datos") },
+                    icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = "Pagos") },
+                    label = { Text("Pagos") },
                     selected = selectedTab == 3,
                     onClick = {
                         selectedTab = 3
+                        navController.navigate("pagos") { launchSingleTop = true }
+                    }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Filled.Info, contentDescription = "Datos") },
+                    label = { Text("Datos") },
+                    selected = selectedTab == 4,
+                    onClick = {
+                        selectedTab = 4
                         navController.navigate("datos") { launchSingleTop = true }
                     }
                 )
@@ -663,6 +640,7 @@ fun AdminNavHost() {
             composable("usuarios") { AdminUsuariosScreen() }
             composable("datos") { AdminDatosScreen() }
             composable("reportes") { AdminReportesScreen() }
+            composable("pagos") { AdminPagosScreen() }
         }
     }
 }
@@ -771,6 +749,74 @@ fun CanasDeUsuarioScreen(usuario: UserResponse, onClose: () -> Unit) {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(canas) { cana ->
                         ExpandableCanaCard(cana)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PagosPendientesSection() {
+    val viewModel: PagosViewModel = viewModel()
+    val state by viewModel.state.collectAsState(initial = PagosState.Empty)
+
+    LaunchedEffect(Unit) {
+        viewModel.cargarPagosPendientesMes()
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Pagos pendientes del mes",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            when (state) {
+                is PagosState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                }
+                is PagosState.Error -> {
+                    Text(
+                        text = (state as PagosState.Error).message,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+                is PagosState.Empty -> {
+                    Text(
+                        text = "Todo bien hasta el momento...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+                is PagosState.Success -> {
+                    val pagos = (state as PagosState.Success).pagos
+                    pagos.forEach { pago ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Usuario: ${pago.idUsuario}", fontWeight = FontWeight.SemiBold)
+                                Text("Monto: $${pago.monto} MXN")
+                                Text("Periodo: ${pago.periodoInicio} a ${pago.periodoFin}")
+                            }
+                            Button(
+                                onClick = { viewModel.marcarComoPagado(pago) },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Text("Marcar como pagado")
+                            }
+                        }
+                        Divider()
                     }
                 }
             }

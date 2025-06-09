@@ -6,26 +6,26 @@ import okhttp3.RequestBody
 import retrofit2.Response
 
 interface CanaApi {
-    @POST("cana")
+    @POST("api/v1/cana")
     suspend fun createCana(@Body canaDto: CanaDto): CanaDto
 
-    @GET("cana/usuario/{idUsuario}")
+    @GET("api/v1/cana/usuario/{idUsuario}")
     suspend fun getCanaByUsuario(
         @Path("idUsuario") idUsuario: String,
         @Query("fecha") fecha: String
     ): List<CanaDto>
 
-    @GET("cana/usuario/{idUsuario}/todas")
+    @GET("api/v1/cana/usuario/{idUsuario}/todas")
     suspend fun getAllCanaByUsuario(@Path("idUsuario") idUsuario: String): List<CanaDto>
 
-    @GET("cana/fecha/{fecha}")
+    @GET("api/v1/cana/fecha/{fecha}")
     suspend fun getCanaByFecha(@Path("fecha") fecha: String): List<CanaDto>
 
-    @PUT("cana/{id}")
+    @PUT("api/v1/cana/{id}")
     suspend fun updateCana(@Path("id") id: String, @Body canaDto: CanaDto): CanaDto
 
     @Multipart
-    @POST("cana/con-imagen")
+    @POST("api/v1/cana/con-imagen")
     suspend fun createCanaConImagen(
         @Part file: MultipartBody.Part,
         @Part("idUsuario") idUsuario: RequestBody,
@@ -37,6 +37,6 @@ interface CanaApi {
         @Part("resumenCosecha") resumenCosecha: RequestBody
     ): Response<CanaDto>
 
-    @DELETE("canas/usuario/{idUsuario}")
+    @DELETE("api/v1/cana/usuario/{idUsuario}")
     suspend fun deleteCanasByUsuario(@Path("idUsuario") idUsuario: String): Unit?
 } 
