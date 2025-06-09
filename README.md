@@ -1,5 +1,4 @@
 # Collita
-# Collita
 
 ## Descripción
 Collita es una aplicación móvil desarrollada en Android que permite gestionar y registrar información relacionada con la cosecha de caña. La aplicación facilita el seguimiento de trabajos, pagos y sesiones de los usuarios.
