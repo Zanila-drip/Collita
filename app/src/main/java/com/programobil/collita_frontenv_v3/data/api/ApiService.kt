@@ -14,6 +14,9 @@ interface ApiService {
 
     @GET("usuarios")
     suspend fun getAllUsuarios(): List<UserResponse>
+
+    @DELETE("usuarios/{id}")
+    suspend fun deleteUsuario(@Path("id") id: String): Unit?
 }
 
 data class LoginRequest(

@@ -15,8 +15,13 @@ import com.programobil.collita_frontenv_v3.data.api.UserResponse
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UsuarioCardHistorialStyle(usuario: UserResponse) {
+fun UsuarioCardHistorialStyle(
+    usuario: UserResponse,
+    onDelete: (UserResponse) -> Unit,
+    onShowCanas: (UserResponse) -> Unit = {}
+) {
     var expanded by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -31,7 +36,7 @@ fun UsuarioCardHistorialStyle(usuario: UserResponse) {
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Nombre y botón editar
+            // Nombre y botón editar/eliminar
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -48,11 +53,18 @@ fun UsuarioCardHistorialStyle(usuario: UserResponse) {
                     maxLines = 1
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = { /* TODO: Editar */ }) {
+                IconButton(onClick = { onShowCanas(usuario) }) {
                     Icon(
                         imageVector = Icons.Filled.Edit,
-                        contentDescription = "Editar",
+                        contentDescription = "Ver cañas",
                         tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = { showDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Eliminar usuario",
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }
@@ -135,6 +147,26 @@ fun UsuarioCardHistorialStyle(usuario: UserResponse) {
                     }
                 }
             }
+            if (showDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDialog = false },
+                    title = { Text("Eliminar usuario") },
+                    text = { Text("¿Seguro que deseas eliminar a ${usuario.nombreUsuario}?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDialog = false
+                            onDelete(usuario)
+                        }) {
+                            Text("Eliminar")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -152,6 +184,6 @@ fun UsuarioCardHistorialStylePreview() {
     )
     
     MaterialTheme {
-        UsuarioCardHistorialStyle(usuario = usuario)
+        UsuarioCardHistorialStyle(usuario = usuario, onDelete = {}, onShowCanas = {})
     }
 } 

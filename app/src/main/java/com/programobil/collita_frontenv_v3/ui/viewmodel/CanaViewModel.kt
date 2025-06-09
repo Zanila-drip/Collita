@@ -3,7 +3,7 @@ package com.programobil.collita_frontenv_v3.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.programobil.collita_frontenv_v3.data.api.CanaDto
-import com.programobil.collita_frontenv_v3.data.api.CanaService
+import com.programobil.collita_frontenv_v3.data.api.CanaApi
 import com.programobil.collita_frontenv_v3.network.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +18,7 @@ sealed class CanaState {
 }
 
 class CanaViewModel : ViewModel() {
-    private val canaService: CanaService = RetrofitClient.canaService
+    private val canaService: CanaApi = RetrofitClient.canaService
 
     private val _state = MutableStateFlow<CanaState>(CanaState.Initial)
     val state: StateFlow<CanaState> = _state

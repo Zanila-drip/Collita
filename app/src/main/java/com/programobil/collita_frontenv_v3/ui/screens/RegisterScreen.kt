@@ -18,12 +18,12 @@ fun RegisterScreen(
     navController: NavController,
     viewModel: RegisterViewModel = viewModel()
 ) {
-    var nombreUsuario by remember { mutableStateOf("Juan") }
-    var apellidoPaterno by remember { mutableStateOf("Pérez") }
-    var apellidoMaterno by remember { mutableStateOf("García") }
-    var correo by remember { mutableStateOf("juan.perez@example.com") }
-    var telefono by remember { mutableStateOf("5512345678") }
-    var curpUsuario by remember { mutableStateOf("PEGJ123456HDFABC01") }
+    var nombreUsuario by remember { mutableStateOf("Ramiro") }
+    var apellidoPaterno by remember { mutableStateOf("García") }
+    var apellidoMaterno by remember { mutableStateOf("López") }
+    var curpUsuario by remember { mutableStateOf("CURPADMIN123") }
+    var correo by remember { mutableStateOf("Ramiro07@email.com") }
+    var telefono by remember { mutableStateOf("5551234567") }
 
     val state by viewModel.state.collectAsState()
 

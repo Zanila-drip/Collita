@@ -50,6 +50,12 @@ import com.programobil.collita_frontenv_v3.network.RetrofitClient
 import androidx.compose.ui.tooling.preview.Preview
 import com.programobil.collita_frontenv_v3.ui.components.UsuarioCardHistorialStyle
 import com.programobil.collita_frontenv_v3.ui.theme.AdminTheme
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 
 @Composable
 fun AdminHomePageScreen(navController: NavController) {
@@ -64,6 +70,7 @@ private fun AdminHomePageScreenContent(navController: NavController) {
     val usuarios = viewModel.usuarios
     val error = viewModel.error
     var searchQuery by remember { mutableStateOf("") }
+    var usuarioSeleccionado by remember { mutableStateOf<UserResponse?>(null) }
 
     // Obtener el nombre del admin logueado (primer usuario si es Ramiro, o puedes pasar el nombre por parámetro si lo prefieres)
     val admin = usuarios.firstOrNull { it.correo?.contains("ramiro", ignoreCase = true) == true }
@@ -74,12 +81,15 @@ private fun AdminHomePageScreenContent(navController: NavController) {
     val filteredUsuarios = remember(searchQuery, usuarios) {
         usuarios.filter { usuario ->
             val query = searchQuery.trim().lowercase()
-            query.isEmpty() ||
+            val esRamiro = usuario.correo?.trim()?.lowercase() == "ramiro07@email.com" ||
+                usuario.curpUsuario?.trim()?.lowercase() == "curpadmin123"
+            (query.isEmpty() ||
                 usuario.nombreUsuario?.lowercase()?.contains(query) == true ||
                 usuario.apellidoPaternoUsuario?.lowercase()?.contains(query) == true ||
                 usuario.apellidoMaternoUsuario?.lowercase()?.contains(query) == true ||
                 usuario.curpUsuario?.lowercase()?.contains(query) == true ||
                 usuario.correo?.lowercase()?.contains(query) == true
+            ) && !esRamiro
         }
     }
 
@@ -133,13 +143,21 @@ private fun AdminHomePageScreenContent(navController: NavController) {
                         LoadingIndicator()
                     }
                     else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(filteredUsuarios) { usuario ->
-                                UsuarioCardHistorialStyle(usuario = usuario)
+                        if (usuarioSeleccionado != null) {
+                            CanasDeUsuarioScreen(usuarioSeleccionado!!, onClose = { usuarioSeleccionado = null })
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(filteredUsuarios) { usuario ->
+                                    UsuarioCardHistorialStyle(
+                                        usuario = usuario,
+                                        onDelete = { viewModel.eliminarUsuario(it.id ?: "") },
+                                        onShowCanas = { usuarioSeleccionado = it }
+                                    )
+                                }
                             }
                         }
                     }
@@ -333,7 +351,7 @@ fun AdminReportesScreen() {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Total de cañas: ${canas.size}",
+                        text = "Total de participantes: ${canas.map { it.idUsuario }.distinct().size}",
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
@@ -341,7 +359,7 @@ fun AdminReportesScreen() {
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = "Promedio por caña: ${if (canas.isNotEmpty()) canas.sumOf { it.cantidadCanaUsuario } / canas.size else 0}",
+                        text = "Costo del día: $${canas.sumOf { it.cantidadCanaUsuario * 80 }.toInt()} MXN",
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -377,21 +395,43 @@ fun AdminReportesScreen() {
 fun ExpandableCanaCard(cana: CanaDto) {
     var expanded by remember { mutableStateOf(false) }
     var usuario by remember { mutableStateOf<UsuarioDto?>(null) }
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+    var isLoadingImage by remember { mutableStateOf(false) }
+    var imageError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+
+    fun cargarImagen() {
+        scope.launch {
+            try {
+                println("DEBUG: Cargando usuario para ID: ${cana.idUsuario}")
+                usuario = RetrofitClient.usuarioService.getUsuarioById(cana.idUsuario)
+                println("DEBUG: Usuario cargado: ${usuario?.nombreUsuario}")
+                
+                // Construir la URL de la imagen con la ruta correcta
+                imageUrl = "http://64.23.166.183:8080/api/v1/cana/${cana.id}/imagen"
+                println("DEBUG: URL de imagen construida: $imageUrl")
+                println("DEBUG: ID de la caña: ${cana.id}")
+                isLoadingImage = true
+                imageError = null
+            } catch (e: Exception) {
+                println("ERROR: Error al cargar datos: ${e.message}")
+                e.printStackTrace()
+                imageError = "Error al cargar datos: ${e.message}"
+            }
+        }
+    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                expanded = !expanded
-                if (expanded && usuario == null) {
-                    scope.launch {
-                        try {
-                            usuario = RetrofitClient.usuarioService.getUsuarioById(cana.idUsuario)
-                        } catch (_: Exception) {}
-                    }
-                }
-            },
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable { expanded = !expanded },
+        onClick = {
+            expanded = !expanded
+            if (expanded && usuario == null) {
+                cargarImagen()
+            }
+        },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -400,7 +440,11 @@ fun ExpandableCanaCard(cana: CanaDto) {
         ) {
             Row {
                 Text(
-                    text = usuario?.nombreUsuario ?: "Cargando...",
+                    text = when {
+                        usuario == null && !isLoadingImage && imageError != null -> "Usuario eliminado"
+                        usuario?.nombreUsuario != null -> usuario?.nombreUsuario!!
+                        else -> "Cargando..."
+                    },
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
@@ -411,10 +455,89 @@ fun ExpandableCanaCard(cana: CanaDto) {
             }
             if (expanded) {
                 Divider(Modifier.padding(vertical = 4.dp))
-                Text("CURP: ${usuario?.curpUsuario ?: "Cargando..."}")
+                Text("CURP: ${usuario?.curpUsuario ?: if (!isLoadingImage && imageError != null) "Usuario eliminado" else "Cargando..."}")
                 Text("ID: ${cana.idUsuario}")
                 Text("Hora inicio: ${cana.horaInicioUsuario}")
                 Text("Hora fin: ${cana.horaFinalUsuario}")
+                
+                // Mostrar la imagen si existe
+                if (isLoadingImage) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                
+                imageError?.let { error ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Error",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "No se pudo cargar la imagen",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = { cargarImagen() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Reintentar",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Reintentar")
+                            }
+                        }
+                    }
+                }
+                
+                imageUrl?.let { url ->
+                    AsyncImage(
+                        model = url,
+                        contentDescription = "Imagen de la caña",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
+                        onLoading = { 
+                            println("DEBUG: Iniciando carga de imagen desde URL: $url")
+                            isLoadingImage = true 
+                        },
+                        onSuccess = { 
+                            println("DEBUG: Imagen cargada exitosamente")
+                            isLoadingImage = false 
+                            imageError = null
+                        },
+                        onError = { 
+                            println("ERROR: Error al cargar la imagen: ${it.result.throwable.message}")
+                            isLoadingImage = false
+                            imageError = "Error al cargar la imagen"
+                        }
+                    )
+                }
             }
         }
     }
@@ -471,7 +594,10 @@ fun AdminUsuariosScreen() {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(filteredUsuarios) { usuario ->
-                            UsuarioCardHistorialStyle(usuario = usuario)
+                            UsuarioCardHistorialStyle(
+                                usuario = usuario,
+                                onDelete = { viewModel.eliminarUsuario(it.id ?: "") }
+                            )
                         }
                     }
                 }
@@ -508,21 +634,21 @@ fun AdminNavHost() {
                     }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Info, contentDescription = "Datos") },
-                    label = { Text("Datos") },
+                    icon = { Icon(Icons.Filled.List, contentDescription = "Reportes") },
+                    label = { Text("Reportes") },
                     selected = selectedTab == 2,
                     onClick = {
                         selectedTab = 2
-                        navController.navigate("datos") { launchSingleTop = true }
+                        navController.navigate("reportes") { launchSingleTop = true }
                     }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.List, contentDescription = "Reportes") },
-                    label = { Text("Reportes") },
+                    icon = { Icon(Icons.Filled.Info, contentDescription = "Datos") },
+                    label = { Text("Datos") },
                     selected = selectedTab == 3,
                     onClick = {
                         selectedTab = 3
-                        navController.navigate("reportes") { launchSingleTop = true }
+                        navController.navigate("datos") { launchSingleTop = true }
                     }
                 )
             }
@@ -580,5 +706,74 @@ fun AdminUsuariosScreenPreview() {
 fun AdminNavHostPreview() {
     AdminTheme {
         AdminNavHost()
+    }
+}
+
+@Composable
+fun CanasDeUsuarioScreen(usuario: UserResponse, onClose: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var canas by remember { mutableStateOf<List<CanaDto>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(usuario.id) {
+        isLoading = true
+        error = null
+        scope.launch {
+            try {
+                canas = RetrofitClient.canaService.getAllCanaByUsuario(usuario.id ?: "")
+            } catch (e: Exception) {
+                error = "Error al cargar cañas: ${e.message}"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
+            }
+            Text(
+                text = "Cañas de ${usuario.nombreUsuario}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+        Divider(modifier = Modifier.padding(vertical = 8.dp))
+        when {
+            isLoading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            error != null -> {
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            canas.isEmpty() -> {
+                Text(
+                    text = "No hay cañas registradas para este usuario",
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            else -> {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(canas) { cana ->
+                        ExpandableCanaCard(cana)
+                    }
+                }
+            }
+        }
     }
 } 

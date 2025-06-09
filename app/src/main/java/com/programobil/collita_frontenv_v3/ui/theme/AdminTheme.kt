@@ -1,27 +1,33 @@
 package com.programobil.collita_frontenv_v3.ui.theme
 
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val AdminPrimary = Color(0xFF0D1B2A) // Azul marino
-val AdminSecondary = Color(0xFF1B263B) // Gris azulado oscuro
-val AdminAccent = Color(0xFFFFD700) // Dorado
-val AdminOnPrimary = Color.LightGray
+// Colores principales
+val AdminPrimary = Color(0xFF424242) // Gris oscuro
+val AdminSecondary = Color(0xFF757575) // Gris medio
+val AdminAccent = Color(0xFF2196F3) // Azul
+val AdminBackground = Color(0xFFF5F5F5) // Gris claro
 val AdminError = Color(0xFFB00020)
 
-val AdminColorScheme = darkColorScheme(
+// Esquema de colores
+val AdminColorScheme = lightColorScheme(
     primary = AdminPrimary,
-    onPrimary = AdminOnPrimary,
+    onPrimary = Color.White,
     secondary = AdminSecondary,
-    onSecondary = AdminOnPrimary,
-    background = AdminSecondary,
-    onBackground = AdminOnPrimary,
-    surface = AdminPrimary,
-    onSurface = AdminAccent,
+    onSecondary = Color.White,
+    background = AdminBackground,
+    onBackground = AdminPrimary,
+    surface = Color.White,
+    onSurface = AdminPrimary,
     error = AdminError,
-    onError = Color.LightGray
+    onError = Color.White,
+    surfaceVariant = Color(0xFFE0E0E0), // Gris más claro para variantes de superficie
+    onSurfaceVariant = AdminPrimary,
+    primaryContainer = Color(0xFFBDBDBD), // Gris medio para contenedores
+    onPrimaryContainer = AdminPrimary
 )
 
 @Composable

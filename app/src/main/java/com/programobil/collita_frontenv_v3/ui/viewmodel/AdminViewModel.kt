@@ -30,4 +30,16 @@ class AdminViewModel : ViewModel() {
             }
         }
     }
+
+    fun eliminarUsuario(id: String) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.apiService.deleteUsuario(id)
+                RetrofitClient.canaService.deleteCanasByUsuario(id)
+                usuarios = usuarios.filter { it.id != id }
+            } catch (e: Exception) {
+                error = "Error al eliminar usuario: ${e.message}"
+            }
+        }
+    }
 } 
